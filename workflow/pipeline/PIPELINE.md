@@ -66,60 +66,110 @@ interface PipelineOptions {
 
 ## Stage Registry
 
+Stages use a factory pattern (not static instances) — each pipeline run gets fresh stage instances:
+
 ```typescript
-// registry.ts — maps stage names to implementations
-const stages: Record<string, PipelineStage> = {
-  scan: new ScanStage(),
-  ingest: new IngestStage(),
-  derive_status: new DeriveStatusStage(),
-  diagnose: new DiagnoseStage(),
-  sync_tickets: new SyncTicketsStage(),
-};
+// registry.ts
+type StageFactory = () => PipelineStage;
+
+function createStageRegistry() {
+  const factories = new Map<string, StageFactory>();
+
+  factories.set('scan', () => new ScanStage());
+  factories.set('ingest', () => new IngestStage());
+  factories.set('derive_status', () => new DeriveStatusStage());
+
+  return {
+    register(name: string, factory: StageFactory): void {
+      factories.set(name, factory);
+    },
+    resolve(names: string[]): PipelineStage[] {
+      return names.map(name => {
+        const factory = factories.get(name);
+        if (!factory) throw new Error(`Unknown pipeline stage: '${name}'`);
+        return factory();
+      });
+    },
+  };
+}
 ```
 
 ## Runner
 
 ```typescript
-async function runPipeline(
-  config: PipelineConfig,
-  options: PipelineOptions = {}
+async function run(
+  stageNames: string[],
+  initialContext: Record<string, unknown>,
+  options?: PipelineOptions
 ): Promise<PipelineResult> {
-  const results: StageResult[] = [];
-  const context: PipelineContext = { projects: config.projects };
   const start = Date.now();
+  const stageResults: StageResult[] = [];
+  let hasErrors = false;
 
-  for (const stageName of config.stages) {
-    const stage = registry[stageName];
+  eventBus.dispatch({ event_type: 'pipeline_started', timestamp: Date.now() });
+
+  // Context is immutable — each stage enriches via spread
+  let mergedContext = { ...initialContext };
+
+  for (const name of stageNames) {
+    const stage = registry.resolve([name])[0];
     const stageStart = Date.now();
 
     try {
-      const output = await stage.execute(context);
-      Object.assign(context, output);  // Stages enrich context
-      results.push({ name: stageName, status: 'completed', duration: Date.now() - stageStart });
-    } catch (error) {
-      results.push({ name: stageName, status: 'failed', duration: Date.now() - stageStart, error: error.message });
-      if (!options.continueOnError) {
-        return { status: 'failed', stages: results, duration: Date.now() - start, failedStage: stageName, error: error.message };
+      const output = await stage.execute(mergedContext);
+      stageResults.push({ name, status: 'completed', duration: Date.now() - stageStart });
+      mergedContext = { ...mergedContext, ...output };
+    } catch (err) {
+      stageResults.push({ name, status: 'failed', duration: Date.now() - stageStart, error: err.message });
+
+      if (!options?.continueOnError) {
+        eventBus.dispatch({ event_type: 'pipeline_stage_failed', stage: name, error: err.message });
+        return { status: 'failed', stages: stageResults, duration: Date.now() - start, failedStage: name };
       }
+      hasErrors = true;
     }
   }
 
-  const hasFailures = results.some(r => r.status === 'failed');
-  return {
-    status: hasFailures ? 'completed_with_errors' : 'completed',
-    stages: results,
-    duration: Date.now() - start,
-  };
+  const status = hasErrors ? 'completed_with_errors' : 'completed';
+  eventBus.dispatch({ event_type: 'pipeline_completed', duration_ms: Date.now() - start, status });
+  return { status, stages: stageResults, duration: Date.now() - start };
 }
 ```
 
 ## Key Patterns
 
-- **Context enrichment:** Each stage can add data to context for downstream stages
+- **Factory registry:** Each run gets fresh stage instances (no shared state between runs)
+- **Immutable context enrichment:** `{ ...mergedContext, ...output }` — stages can't corrupt upstream data
+- **EventBus integration:** Pipeline emits lifecycle events (started, stage_failed, completed)
 - **Fail-fast or continue:** `continueOnError` flag controls behavior
 - **Duration tracking:** Every stage timed for observability
 - **YAML-driven:** Pipeline definition is config, not code
 - **Stage isolation:** Each stage is a class with single `execute()` method
+
+## EventBus Integration
+
+Pipelines emit events that subscribers can react to:
+
+```typescript
+interface PipelineEvent {
+  event_type: 'pipeline_started' | 'pipeline_stage_failed' | 'pipeline_completed';
+  timestamp: number;
+  stage?: string;
+  error?: string;
+  duration_ms?: number;
+  status?: string;
+}
+```
+
+Subscribers can: log, notify, update dashboards, trigger downstream pipelines.
+
+## FSM Integration
+
+Pipelines connect to state machines via events. Example from watchdog:
+- `ingest` stage discovers new CVEs → fires `record_created` event
+- `sync_tickets` stage finds ticket→CVE mapping → fires `ticket_created` event
+- State machine transitions records based on events
+- DB integrity invariants enforced: "after ticket creation, all matching records MUST transition"
 
 ## Hooks (lifecycle events)
 
