@@ -29,21 +29,43 @@
 - Tab naming convention: `<role>-<task-slug>`
 - Pane ID targeting (never focus-steal for programmatic ops)
 
-### 1.2 LLM Proxy (`core/llm-proxy/`)
+### 1.2 Coding Agent Integration (`core/coding-agent/`)
 
-**Problem solved:** Corporate environments need auth token refresh, TLS interception handling, request routing.
+**Problem solved:** Need a standardized way to run coding agents with tool access, context injection, and session management. Default to kiro-cli but allow swapping in other agents (claude-code, aider, cursor-agent, etc.).
 
 **Contents:**
-- Go source for Anthropic-compatible proxy
-- Token refresh mechanism (pluggable: AWS SSO, OAuth, API key)
-- Systemd service + timer for token refresh
-- TLS/CA bundle handling (NODE_EXTRA_CA_CERTS pattern)
+- `AGENTS.md` — Supported agents, capabilities matrix, configuration
+- `kiro/` — Kiro-specific config (agent JSON, trust settings, classic mode)
+- `adapters/` — Adapter shims for alternative agents
+- `agent-config-template.json` — Standard agent definition format
+- `preflight.sh` — Verify agent CLI is installed and configured
 
 **Key patterns:**
-- Single endpoint (localhost:8080) all agents hit
-- Token refresh as separate timer (not inline)
-- CA bundle injection for corporate proxy environments
-- Health endpoint for preflight checks
+- Agent CLI abstracted behind a common interface (spawn, briefing, result)
+- Kiro as default: `kiro-cli chat --classic --agent <name> --trust-tools <list>`
+- Agent JSON defines: name, model, prompt, tools, deniedPaths, resources
+- Alternative agents plug in via adapter scripts that translate briefing → agent-specific invocation
+- Trust settings per role (coder gets fs_write, supervisor gets read-only)
+
+**Agent interface contract:**
+```
+Input:  briefing file (markdown) + working directory + allowed tools
+Output: result file (markdown) at specified path
+Signal: process exit (0=success, non-zero=failure)
+```
+
+**Kiro-specific:**
+- `--classic` mode for non-interactive (fire-and-forget) spawns
+- `--agent <name>` loads from `~/.kiro/agents/<name>.json`
+- `--trust-tools` whitelist (derived from role's allowed tools)
+- Resources array for context injection at session start
+- Hooks for spawn-time context (hot memory, workspace state)
+
+**Pluggable alternatives:**
+- Claude Code: `claude --dangerously-skip-permissions -p "briefing"`
+- Aider: `aider --message-file briefing.md`
+- Cursor Agent: via API
+- Custom: any CLI that reads a prompt and writes files
 
 ### 1.3 Session Daemon (`core/session-daemon/`)
 
@@ -356,10 +378,10 @@ Idea → Spec (draft) → Spec (approved) → Plan → Implement (TDD) → Verif
 | P0 | `docs/FRESH-MACHINE.md` | 1d | Unblocks everything else |
 | P0 | `core/multiplexer/` | 0.5d | Foundation for all agent work |
 | P0 | `workflow/sdd/` + `workflow/trio/` | 1d | Core methodology |
+| P0 | `core/coding-agent/` | 1d | Agent CLI setup + kiro default |
 | P1 | `agents/roles/` + `agents/rules/` | 1d | Agent quality |
 | P1 | `core/agent-launcher/` | 1d | Spawn infrastructure |
 | P1 | `templates/common/` | 0.5d | Reusable project skeleton |
-| P2 | `core/llm-proxy/` | 2d | Corporate environment support |
 | P2 | `workflow/issue-lifecycle/` | 1d | Tracking |
 | P2 | `quality/pre-commit/` | 0.5d | Safety net |
 | P3 | `core/session-daemon/` | 3d | Advanced orchestration |

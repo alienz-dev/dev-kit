@@ -31,10 +31,10 @@
      └─────────────────────┬──────────────────────────┘
                            │
      ┌─────────────────────▼──────────────────────────┐
-     │              LLM Proxy (localhost:8080)          │
-     │  - Token refresh (timer-based)                 │
-     │  - TLS/CA handling                             │
-     │  - Request translation (if needed)             │
+     │         Coding Agent CLI (pluggable)            │
+     │  - Default: kiro-cli (--classic --agent <role>) │
+     │  - Alt: claude-code, aider, cursor-agent       │
+     │  - Interface: briefing in → result file out    │
      └────────────────────────────────────────────────┘
 ```
 
@@ -88,6 +88,8 @@ Launcher watches for result file creation → triggers parent notification.
 
 | Decision | Alternative | Why This |
 |----------|-------------|----------|
+| Kiro as default agent | Claude Code, Aider | Tool-use native, agent JSON, deniedPaths enforcement, resources |
+| Pluggable agent interface | Hardcoded to one CLI | Teams use different tools; adapter pattern keeps core generic |
 | File messaging | WebSocket/HTTP | Survives crashes, no server needed, agent-readable |
 | SQLite state | Redis/Postgres | Zero setup, WAL for concurrency, portable |
 | Zellij tabs | Docker containers | Lower overhead, shared filesystem, visible to user |

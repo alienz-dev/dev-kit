@@ -6,7 +6,7 @@ A portable development toolkit for AI-assisted software projects. Extracted from
 
 A repo you clone on a fresh machine to bootstrap a full AI-native development environment:
 - Terminal multiplexer with agent-aware layout
-- LLM proxy for tool-use agents
+- Coding agent integration (kiro default, pluggable for others)
 - Spec-driven development pipeline
 - Multi-agent orchestration (supervisor → test-manager → coder)
 - Issue tracking with lifecycle gates
@@ -40,7 +40,7 @@ dev-kit/
 │
 ├── core/                       # Core infrastructure
 │   ├── multiplexer/            # Zellij config, layouts, plugins
-│   ├── llm-proxy/              # LLM proxy (Anthropic-compatible API)
+│   ├── coding-agent/           # Agent CLI integration (kiro default, pluggable)
 │   ├── session-daemon/         # Session lifecycle, hang detection, dispatch
 │   └── agent-launcher/         # Agent spawn, briefing, result collection
 │

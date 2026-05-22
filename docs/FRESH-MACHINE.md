@@ -62,49 +62,42 @@ Key settings:
 - `session_serialization false` — don't persist layout state (agents manage their own)
 - `pane_frames false` — maximize screen real estate
 
-## Step 6: LLM Access
-
-Choose one:
-
-### Option A: Direct API Key
-```bash
-export ANTHROPIC_API_KEY="sk-ant-..."
-# Or for OpenAI-compatible:
-export OPENAI_API_KEY="..."
-export OPENAI_BASE_URL="https://api.anthropic.com/v1"
-```
-
-### Option B: LLM Proxy (corporate environments)
-```bash
-cd core/llm-proxy
-# See core/llm-proxy/README.md for setup
-# Provides localhost:8080 with auto token refresh
-```
-
-### Option C: AWS Bedrock / CodeWhisperer
-```bash
-# Requires AWS SSO login + proxy translation layer
-# See core/llm-proxy/README.md for corporate setup
-```
-
-## Step 7: Agent CLI
-
-Install your preferred agent CLI:
+## Step 6: Coding Agent (Kiro default)
 
 ```bash
-# Kiro
+# Install kiro-cli (default coding agent)
 npm install -g @anthropic/kiro-cli
 
+# Verify
+kiro-cli --version
+```
+
+### Alternative Agents (optional)
+
+```bash
 # Claude Code
 npm install -g @anthropic/claude-code
 
 # Aider
 pip install aider-chat
 
-# Or any Anthropic-compatible CLI
+# Any agent that satisfies the adapter interface works
+# See core/coding-agent/adapters/ for examples
 ```
 
-## Step 8: First Project
+### Agent Configuration
+
+```bash
+# Create agent definitions directory
+mkdir -p ~/.kiro/agents ~/.kiro/rules ~/.kiro/state
+
+# Copy default rules
+cp agents/rules/SAFETY.md ~/.kiro/rules/client_rules.md
+
+# Create your first agent JSON (see core/coding-agent/kiro/SETUP.md)
+```
+
+## Step 7: First Project
 
 ```bash
 ./scaffold.sh my-project
@@ -112,7 +105,7 @@ cd ~/projects/my-project
 # Agent session starts with full infrastructure
 ```
 
-## Step 9: Verification Checklist
+## Step 8: Verification Checklist
 
 ```bash
 # All should pass:
@@ -121,7 +114,9 @@ python3 --version | grep -q "3.1" && echo "✓ Python 3.10+"
 zellij --version && echo "✓ Zellij"
 git --version && echo "✓ Git"
 jq --version && echo "✓ jq"
+command -v kiro-cli && echo "✓ Kiro CLI"
 test -f ~/.config/zellij/config.kdl && echo "✓ Zellij config"
+test -d ~/.kiro/agents && echo "✓ Agent config dir"
 ```
 
 ## Corporate Environment Extras
