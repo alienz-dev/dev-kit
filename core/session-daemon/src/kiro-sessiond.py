@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""crew-sessiond.py — Crew session daemon: registry, message queue, dispatch,
+"""kiro-sessiond.py — Crew session daemon: registry, message queue, dispatch,
 state monitoring, hang detection, tab replacement, LLM verdict system,
 LLM merge proxy, DLQ, reminders, observability.
 

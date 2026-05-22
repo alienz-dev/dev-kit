@@ -80,7 +80,7 @@ Launcher watches for result file creation → triggers parent notification.
 ```
 ~/.local/share/crew/
   ├── crew-session.db      # Session registry
-  ├── crew-sessiond.log    # Daemon log
+  ├── kiro-sessiond.log    # Daemon log
   └── messages/            # Message queue
 ```
 

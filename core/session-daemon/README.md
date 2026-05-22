@@ -2,7 +2,7 @@
 
 ## Status: Complete (production)
 
-The session daemon (`crew-sessiond.py`) is a production-tested Python daemon providing agent session management. Source at `src/crew-sessiond.py` (3779 lines).
+The session daemon (`kiro-sessiond`) is a production-tested Python daemon providing agent session management. Source at `src/kiro-sessiond.py` (3779 lines).
 
 ## Problem
 
@@ -15,7 +15,7 @@ Agent sessions hang, crash, or need coordination. Without a daemon:
 ## Architecture
 
 ```
-crew-sessiond (Python, single process)
+kiro-sessiond (Python, single process)
 ├── Registry (SQLite)
 │   ├── Active sessions (pane ID, role, task, start time)
 │   ├── Message queue (sender, recipient, content, status)
@@ -69,7 +69,7 @@ After=network.target
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/python3 /path/to/crew-sessiond.py
+ExecStart=/usr/bin/python3 /path/to/kiro-sessiond.py
 Restart=on-failure
 RestartSec=5
 
@@ -102,7 +102,7 @@ agents-msg.sh send terminal_<id> "message" --role "sender-role"
 
 ## Implementation Status
 
-Production-complete. Source: `src/crew-sessiond.py` (3779 lines, Python, zero external deps).
+Production-complete. Source: `src/kiro-sessiond.py` (3779 lines, Python, zero external deps).
 
 Features implemented:
 - Session registry (SQLite WAL)
@@ -115,10 +115,10 @@ Features implemented:
 
 Install:
 ```bash
-cp src/crew-sessiond.py ~/.local/bin/crew-sessiond
-chmod +x ~/.local/bin/crew-sessiond
+cp src/kiro-sessiond.py ~/.local/bin/kiro-sessiond
+chmod +x ~/.local/bin/kiro-sessiond
 
 # Systemd service
-cp ../infra/systemd/crew-sessiond.service ~/.config/systemd/user/
-systemctl --user enable --now crew-sessiond
+cp ../infra/systemd/kiro-sessiond.service ~/.config/systemd/user/
+systemctl --user enable --now kiro-sessiond
 ```

@@ -15,7 +15,7 @@ systemctl --user daemon-reload
 
 | Service | Purpose | Type |
 |---------|---------|------|
-| crew-sessiond.service | Agent session daemon | always-on |
+| kiro-sessiond.service | Agent session daemon | always-on |
 
 ## Patterns
 
