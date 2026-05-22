@@ -1,0 +1,15 @@
+// Default layout with status bar
+layout {
+    pane
+    pane size=1 borderless=true {
+        plugin location="file:~/.config/zellij/plugins/zjstatus.wasm" {
+            format_left  "{tabs}"
+            format_right "{session} {mode}"
+            mode_locked  ""
+            mode_normal  "#[fg=yellow,bold]UNLOCKED"
+            tab_active   "#[fg=white,bold]{name}"
+            tab_normal   "#[fg=#666666]{name}"
+            tab_separator "  "
+        }
+    }
+}
