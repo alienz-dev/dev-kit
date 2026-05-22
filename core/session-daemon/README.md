@@ -1,5 +1,9 @@
 # Session Daemon
 
+## Status: Complete (production)
+
+The session daemon (`crew-sessiond.py`) is a production-tested Python daemon providing agent session management. Source at `src/crew-sessiond.py` (3779 lines).
+
 ## Problem
 
 Agent sessions hang, crash, or need coordination. Without a daemon:
@@ -98,8 +102,23 @@ agents-msg.sh send terminal_<id> "message" --role "sender-role"
 
 ## Implementation Status
 
-This is the most complex module. Implement incrementally:
-1. **Phase 1:** Registry only (track what's running)
-2. **Phase 2:** Hang detection (idle timeout, kill stuck)
-3. **Phase 3:** Message queue (file-based)
-4. **Phase 4:** Auto-recovery (respawn crashed agents)
+Production-complete. Source: `src/crew-sessiond.py` (3779 lines, Python, zero external deps).
+
+Features implemented:
+- Session registry (SQLite WAL)
+- Hang detection (idle, stuck, error loop, rate limit)
+- Message queue (file-based, DLQ)
+- Tab replacement (kill hung, respawn)
+- LLM verdict system
+- Observability (structured logging, metrics)
+- Checklist-driven dispatch
+
+Install:
+```bash
+cp src/crew-sessiond.py ~/.local/bin/crew-sessiond
+chmod +x ~/.local/bin/crew-sessiond
+
+# Systemd service
+cp ../infra/systemd/crew-sessiond.service ~/.config/systemd/user/
+systemctl --user enable --now crew-sessiond
+```

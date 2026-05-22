@@ -1,5 +1,9 @@
 # Agent Launcher
 
+## Status: Complete (production)
+
+The agent launcher (`scripts/kiro-sub.sh`) is a production-tested 762-line bash script that handles the full spawn lifecycle. It's the actual script used daily across watchdog, krew-cli, neo-ui, and studenths projects.
+
 ## Problem
 
 Spawning agents requires: tab creation, briefing injection, context setup, result monitoring, cleanup. Without a launcher, each spawn is manual and error-prone.

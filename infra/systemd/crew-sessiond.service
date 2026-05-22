@@ -1,0 +1,13 @@
+[Unit]
+Description=Crew Session Daemon — agent registry, hang detection, messaging
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=%h/.local/bin/crew-sessiond
+Restart=on-failure
+RestartSec=5
+Environment=PATH=%h/.local/bin:%h/.nvm/versions/node/v22.22.2/bin:/usr/local/bin:/usr/bin:/bin
+
+[Install]
+WantedBy=default.target

@@ -194,6 +194,11 @@ EOF
 # --- Specs ---
 cp "$SCRIPT_DIR/workflow/sdd/SDD.md" specs/SDD.md
 
+# --- Copy tools reference ---
+mkdir -p .tools
+cp "$SCRIPT_DIR/workflow/grill/GRILL.md" .tools/GRILL.md 2>/dev/null || true
+cp "$SCRIPT_DIR/workflow/trio/TRIO.md" .tools/TRIO.md 2>/dev/null || true
+
 cat > specs/README.md << EOF
 # Specifications
 
@@ -282,7 +287,7 @@ cat > ~/.kiro/agents/${NAME}.json << EOF
   "name": "$NAME",
   "description": "$NAME project supervisor",
   "model": "claude-sonnet-4-20250514",
-  "prompt": "You are the $NAME project supervisor at $PROJECT_DIR.\n\nOn session start:\n1. Read: STATUS.md, NEXT-SESSION.md, CONTEXT.md\n2. Read: .agents/knowledge/workflow.md\n3. Run: npm run typecheck\n4. Present state and ask for direction\n\nYou orchestrate and delegate. You do NOT write source code.\nDelegate to spawned workers (coder, tester, reviewer).\n\nFollow spec-driven TDD:\n- Write spec → spawn test-manager → verify RED → spawn coder → verify GREEN → spawn reviewer → close",
+  "prompt": "You are the $NAME project supervisor at $PROJECT_DIR.\n\nOn session start:\n1. Read: STATUS.md, NEXT-SESSION.md, CONTEXT.md\n2. Read: .agents/knowledge/workflow.md\n3. Run: npm run typecheck\n4. Present state and ask for direction\n\nYou orchestrate and delegate. You do NOT write source code.\nDelegate to spawned workers (coder, tester, reviewer).\n\nFollow spec-driven TDD:\n- Write spec → spawn test-manager → verify RED → spawn coder → verify GREEN → spawn reviewer → close\n\nAvailable skills:\n- grill <topic>: Design tree interview before planning (read .tools/GRILL.md)\n- TRIO protocol: Test→Red→Implement→Observe (read .tools/TRIO.md)\n- explainer: Generate visual HTML presentations",
   "toolsSettings": {
     "write": {
       "deniedPaths": ["**/src/**", "**/tests/**", "**/*.ts", "**/*.tsx", "**/*.js"]

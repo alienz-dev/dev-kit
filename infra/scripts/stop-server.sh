@@ -1,29 +1,21 @@
 #!/bin/bash
-# stop-server.sh — Stop a server by port
+# stop-server.sh — Stop a server started by start-server.sh
 # Usage: stop-server.sh <port>
 set -euo pipefail
-
-PORT="${1:?Usage: stop-server.sh <port>}"
-
-if ! command -v lsof &>/dev/null; then
-  # Fallback: use fuser
-  fuser -k "$PORT/tcp" 2>/dev/null && echo "Stopped server on port $PORT" || echo "No server on port $PORT"
+[[ $# -ne 1 ]] && { echo "Usage: stop-server.sh <port>"; exit 1; }
+PORT="$1"
+PIDFILE="/tmp/.server-${PORT}.pid"
+if [[ ! -f "$PIDFILE" ]]; then
+  echo "No server tracked on port $PORT"
   exit 0
 fi
-
-PID=$(lsof -ti :"$PORT" 2>/dev/null | head -1)
-
-if [ -z "$PID" ]; then
-  echo "No server on port $PORT"
-  exit 0
-fi
-
-kill "$PID" 2>/dev/null
-sleep 1
-
+PID=$(cat "$PIDFILE")
 if kill -0 "$PID" 2>/dev/null; then
-  kill -9 "$PID" 2>/dev/null
-  echo "Force-killed server on port $PORT (PID $PID)"
+  kill "$PID" 2>/dev/null
+  sleep 1
+  kill -0 "$PID" 2>/dev/null && kill -9 "$PID" 2>/dev/null
+  echo "Server (PID $PID) on port $PORT stopped"
 else
-  echo "Stopped server on port $PORT (PID $PID)"
+  echo "Server (PID $PID) already dead"
 fi
+rm -f "$PIDFILE"
