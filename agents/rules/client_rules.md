@@ -9,9 +9,9 @@ Universal safety rules loaded into every agent session. Procedural rules (issue 
 
 ## Tool Execution Safety
 
-> [!info] **`< /dev/null` is handled structurally.** TUI mode (kiro-bash-guard.sh) closes stdin, captures stdout to temp files, and applies 300s timeout for ALL commands. Appending `< /dev/null` is harmless but no longer mandatory.
+> [!info] **`< /dev/null` is handled structurally.** `kiro-bash-guard.sh` (AMAZON_Q_CHAT_SHELL) closes stdin, captures stdout to temp files, and applies 300s timeout for ALL commands. TUI mode (2.4.1) also isolates stdin/stdout. Appending `< /dev/null` is harmless but no longer mandatory.
 
-> [!info] **Background servers use `start-server.sh`.** TUI mode captures stdout to temp files (breaking fd inheritance), so raw backgrounding no longer hangs. `start-server.sh` is still the recommended pattern for readability and port management.
+> [!info] **Background servers use `start-server.sh`.** `kiro-bash-guard.sh` captures stdout to temp files (breaking fd inheritance), so raw backgrounding no longer hangs. `start-server.sh` is still the recommended pattern for readability and port management.
 
 > [!error] **Never change vitest pool:threads to pool:forks.** `pool: 'forks'` spawns workers that survive parent exit — orphans at ~2GB each. 6 workers = 13GB = system OOM. If tests are flaky with threads, fix test isolation — do NOT switch to forks.
 
@@ -45,6 +45,12 @@ Universal safety rules loaded into every agent session. Procedural rules (issue 
 
 ---
 
+## Spawn Compliance
+
+> [!error] **Obey explicit spawn requests.** When the user explicitly asks to spawn, delegate, or hand off to a specific agent (keywords: spawn, delegate to, have X do, send to X, use X agent), you MUST execute `kiro-ctl spawn <agent> "task" --subscribe` immediately. Do not do the work yourself. Use the exact agent type specified. After spawning, report the spawn ID and stop. Origin: 2026-05-28 — agents repeatedly ignored spawn requests and did work inline.
+
+---
+
 ## Anti-Hallucination
 
 > [!error] **You start every session with zero project knowledge.** Do not assume you know the codebase. Before acting: read project context files (STATUS.md, NEXT-SESSION.md, README.md, DECISIONS.md), read the specific files you plan to modify. The cost of reading is always less than the cost of a wrong assumption.
@@ -70,3 +76,13 @@ Universal safety rules loaded into every agent session. Procedural rules (issue 
 ## Autonomous Problem-Solving
 
 > [!error] **Solve it yourself before asking the user.** When a task hits a blocker that you have the tools to resolve, attempt to resolve it autonomously. Escalate only after you've exhausted your own capabilities.
+
+---
+
+## File Navigation
+
+> [!error] **Never search from `/` or `~` without scoping.** Unscoped searches are slow (4s+ traversing node_modules, .git, caches) and return noisy results from unrelated system paths. Before using `find` or `glob` on the home directory, read `~/.kiro/knowledge/home-tree.md` to identify the correct subdirectory. Then search within that specific path. Searching from `/` is banned. Searching from `~` requires `-maxdepth 3` minimum.
+
+> [!error] **Use `locate` for file-by-name lookups.** `locate -r "^/home/mingl/.*<pattern>"` is instant (0.03s) vs `find` (4s+). Use it for: finding where a file lives, listing project directories, checking if a path exists. Pipe through `grep -v node_modules` when needed.
+
+> [!error] **Scope searches to known directories.** The home tree at `~/.kiro/knowledge/home-tree.md` maps all key areas. Common targets: `~/projects/` (app repos), `~/work-enhancement/` (tooling repos), `~/vault/` (knowledge), `~/scripts/` (utilities), `~/infra/` (services). Never glob `**/*` from home root.

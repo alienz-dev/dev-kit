@@ -364,3 +364,13 @@ kiro-ctl spawn coder "task" --subscribe
 # Parent receives on child done:
 # [system] [DONE] coder completed. Result: /tmp/kiro-sub-<id>-result.md
 ```
+
+---
+
+## Resource Loading
+
+Each role loads a minimal set of context files at startup. See `../rules/RESOURCE-SETS.md` for the full allocation table.
+
+**Key rule:** Every agent gets the governance layer (client_rules + amazonq + user-profile + hot-memory). Role-specific resources are added on top — only what that role actually uses.
+
+**Context budget target:** No agent should consume more than 15% of its context window on preloaded resources. For Claude Opus (200K tokens), that's ~30K tokens (~100KB text).
