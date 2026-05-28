@@ -45,8 +45,8 @@ npm install -g @anthropic/kiro-cli
       "deniedPaths": ["~/.ssh/id_*", "**/.env.production"]
     }
   },
-  "tools": ["fs_read", "fs_write", "grep", "execute_bash", "glob"],
-  "allowedTools": ["fs_read", "fs_write", "grep", "execute_bash", "glob"],
+  "tools": ["read", "write", "grep", "shell", "glob"],
+  "allowedTools": ["read", "write", "grep", "shell", "glob"],
   "resources": [
     "file:///path/to/knowledge.md"
   ]
@@ -81,21 +81,19 @@ npm install -g @anthropic/kiro-cli
 ]
 ```
 
-## Invocation Modes
+## Invocation
 
-| Mode | Command | Use Case |
-|------|---------|----------|
-| Interactive | `kiro-cli chat --agent <name>` | Supervisor, test-manager |
-| Classic (non-interactive) | `kiro-cli chat --classic --agent <name>` | Spawned workers |
-| Resume | `kiro-cli chat --resume` | Crash recovery |
-| With trust | `--trust-tools fs_read,fs_write,...` | Skip tool confirmation |
+All sessions use TUI mode (stdin/stdout isolation is structural):
 
-## Trust Settings
-
-Derive `--trust-tools` from agent JSON's `tools` array:
 ```bash
-TRUST=$(jq -r '.tools | join(",")' ~/.kiro/agents/<name>.json)
-kiro-cli chat --classic --agent <name> --trust-tools "$TRUST"
+# Standard invocation (all roles)
+kiro-cli chat --tui --agent <name>
+
+# Resume crashed session
+kiro-cli chat --resume
+
+# Resume specific conversation
+kiro-cli chat --resume-id <conversation-id>
 ```
 
 ## Resources (Context Injection)
@@ -113,7 +111,7 @@ Use for: safety rules, project knowledge, workflow definitions.
 ## Gotchas
 
 - Agent JSON must exist BEFORE launching (`kiro-cli` errors with "no agent found")
-- `--classic` mode: `/quit` doesn't exit process — launcher must `kill -9`
-- Ctrl+C in classic mode kills the process (no graceful cancel)
+- TUI mode handles stdin/stdout isolation structurally — no `< /dev/null` needed
 - Resources use `file://` protocol with absolute paths
 - Model field determines which LLM is used (check available models)
+- kiro-bash-guard.sh (AMAZON_Q_CHAT_SHELL) provides 300s timeout for all commands

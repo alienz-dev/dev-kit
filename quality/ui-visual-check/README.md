@@ -47,27 +47,75 @@ ui-visual-check.sh \
   --files src/App.tsx \
   --url http://localhost:3000 \
   --design docs/DESIGN.md \
-  --auto-fix \
   --threshold 8
 
-# Options:
-#   --files       Source files to lint (Layer 1)
-#   --url         Dev server URL for screenshot (Layer 2+3)
-#   --design      Design system reference for VLM anchoring
-#   --auto-fix    Auto-fix high-confidence findings (≥threshold)
-#   --threshold   Confidence threshold for auto-fix (1-10, default 8)
+# Gate mode (sprint-manager integration)
+ui-visual-check.sh --gate \
+  --baseline screenshots/baselines \
+  --url http://localhost:3000 \
+  --files src/components/Dashboard.tsx \
+  --design DESIGN.md
 ```
 
-## Integration with TRIO
+## Sprint-Manager Gate Integration
 
-In coder briefings that touch UI:
+Sprint-manager runs visual QA after GREEN for waves with UI files:
+
+### UI File Detection
+
+Extensions that trigger visual gate: `.tsx`, `.jsx`, `.vue`, `.svelte`, `.css`, `.scss`, `.html`, `.ejs`, `.hbs`
+
+### Gate Command
+
+```bash
+ui-visual-check.sh --gate \
+  --baseline <project>/screenshots/baselines \
+  --url <dev-server-url> \
+  --files <changed-ui-files> \
+  --design DESIGN.md
+```
+
+### Gate Outcomes
+
+| Result | Action |
+|--------|--------|
+| Pass (exit 0) | `--save-baseline`, proceed to next gate |
+| Fail (exit 1) | Re-dispatch coder with findings (max 2 visual retries) |
+| No dev server | `--files` only (Layer 1 static lint) |
+
+### Retry Logic
+
+- Max 2 visual retries per wave
+- On fail: sprint-manager re-dispatches coder with `## Visual Context` section containing findings
+- After 2 failures: pipeline status → failed
+
+### Graceful Degradation
+
+When no dev server is available (backend-only project, CI environment):
+- Only Layer 1 (static analysis) runs
+- Layers 2 and 3 are skipped
+- Gate still enforces token usage and static lint rules
+
+### Coder Briefing Integration
+
+Sprint-manager adds to coder briefings that touch UI:
 ```yaml
 visual-check: true
 dev-server-url: http://localhost:3000
 design-doc: docs/DESIGN.md
 ```
 
-After implementation + tests pass, coder runs visual check automatically.
+On visual retry, adds `## Visual Context` section with specific findings to fix.
+
+## TRIO Integration
+
+The visual check runs as a named gate between GREEN and HIDDEN:
+
+```
+GREEN → WIRING → VISUAL → HIDDEN → ACTIVATION → REVIEW
+```
+
+**Skip condition:** Non-UI changes (backend-only, CLI, library) skip this gate entirely.
 
 ## DESIGN.md Template
 

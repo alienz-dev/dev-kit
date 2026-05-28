@@ -35,17 +35,17 @@
 
 **Contents:**
 - `AGENTS.md` — Supported agents, capabilities matrix, configuration
-- `kiro/` — Kiro-specific config (agent JSON, trust settings, classic mode)
+- `kiro/` — Kiro-specific config (agent JSON, TUI mode setup)
 - `adapters/` — Adapter shims for alternative agents
 - `agent-config-template.json` — Standard agent definition format
 - `preflight.sh` — Verify agent CLI is installed and configured
 
 **Key patterns:**
 - Agent CLI abstracted behind a common interface (spawn, briefing, result)
-- Kiro as default: `kiro-cli chat --classic --agent <name> --trust-tools <list>`
+- Kiro as default: `kiro-cli chat --tui --agent <name>`
 - Agent JSON defines: name, model, prompt, tools, deniedPaths, resources
 - Alternative agents plug in via adapter scripts that translate briefing → agent-specific invocation
-- Trust settings per role (coder gets fs_write, supervisor gets read-only)
+- Trust settings per role (coder gets write, supervisor gets read-only)
 
 **Agent interface contract:**
 ```
@@ -55,7 +55,7 @@ Signal: process exit (0=success, non-zero=failure)
 ```
 
 **Kiro-specific:**
-- `--classic` mode for non-interactive (fire-and-forget) spawns
+- `--tui` mode for all sessions (stdin/stdout isolation is structural)
 - `--agent <name>` loads from `~/.kiro/agents/<name>.json`
 - `--trust-tools` whitelist (derived from role's allowed tools)
 - Resources array for context injection at session start
@@ -89,7 +89,8 @@ Signal: process exit (0=success, non-zero=failure)
 **Problem solved:** Spawning agents with correct context, briefing, result collection, and cleanup.
 
 **Contents:**
-- `spawn.sh` — Main launcher (creates tab, injects briefing, monitors)
+- `kiro-ctl spawn` — Primary dispatch (daemon-driven, EventBus completion tracking)
+- `kiro-sub.sh` — Low-level fallback launcher (when daemon unavailable)
 - `briefing-template.md` — Standard briefing format
 - `result-watcher.sh` — Detects completion, notifies parent
 - `cleanup.sh` — Remove temp files, agent JSON, close tabs

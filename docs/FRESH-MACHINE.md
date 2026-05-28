@@ -59,30 +59,17 @@ cp core/multiplexer/layouts/*.kdl ~/.config/zellij/layouts/
 
 Key settings:
 - `default_mode "locked"` — agents can't accidentally trigger keybinds
-- `session_serialization false` — don't persist layout state (agents manage their own)
+- `session_serialization false` — don't persist layout state
 - `pane_frames false` — maximize screen real estate
 
-## Step 6: Coding Agent (Kiro default)
+## Step 6: Coding Agent (Kiro)
 
 ```bash
-# Install kiro-cli (default coding agent)
+# Install kiro-cli
 npm install -g @anthropic/kiro-cli
 
 # Verify
 kiro-cli --version
-```
-
-### Alternative Agents (optional)
-
-```bash
-# Claude Code
-npm install -g @anthropic/claude-code
-
-# Aider
-pip install aider-chat
-
-# Any agent that satisfies the adapter interface works
-# See core/coding-agent/adapters/ for examples
 ```
 
 ### Agent Configuration
@@ -93,11 +80,62 @@ mkdir -p ~/.kiro/agents ~/.kiro/rules ~/.kiro/state
 
 # Copy default rules
 cp agents/rules/SAFETY.md ~/.kiro/rules/client_rules.md
-
-# Create your first agent JSON (see core/coding-agent/kiro/SETUP.md)
 ```
 
-## Step 7: First Project
+## Step 7: Session Daemon (REQUIRED)
+
+The session daemon provides agent lifecycle management, pipeline enforcement, and EventBus completion tracking.
+
+```bash
+# Install kiro-sessiond
+cp core/session-daemon/src/kiro-sessiond.py ~/.local/bin/kiro-sessiond
+chmod +x ~/.local/bin/kiro-sessiond
+
+# Install kiro-ctl (CLI interface)
+npm install -g kiro-ctl
+
+# Systemd user service (auto-start on login)
+mkdir -p ~/.config/systemd/user
+cp infra/systemd/kiro-sessiond.service ~/.config/systemd/user/
+systemctl --user enable --now kiro-sessiond
+
+# Verify
+kiro-ctl status
+```
+
+## Step 8: Playwright (for Visual QA & Design Tools)
+
+Required for `ui-visual-check.sh` and `design-sandbox.sh`:
+
+```bash
+npm install -g playwright
+npx playwright install chromium
+```
+
+## Step 9: cw-proxy (LLM API Access)
+
+Local proxy for LLM API calls (localhost:8080):
+
+```bash
+# Install cw-proxy (provides Bedrock/Anthropic API access)
+# Follow corporate setup guide for authentication
+# Verify:
+curl http://localhost:8080/health
+```
+
+## Step 10: Data Analyst venv (optional)
+
+For the data-analyst agent:
+
+```bash
+mkdir -p ~/.local/share/kiro/venv
+python3 -m venv ~/.local/share/kiro/venv/data-analyst
+source ~/.local/share/kiro/venv/data-analyst/bin/activate
+pip install pandas numpy scipy scikit-learn matplotlib seaborn
+deactivate
+```
+
+## Step 11: First Project
 
 ```bash
 ./scaffold.sh my-project
@@ -105,7 +143,7 @@ cd ~/projects/my-project
 # Agent session starts with full infrastructure
 ```
 
-## Step 8: Verification Checklist
+## Step 12: Verification Checklist
 
 ```bash
 # All should pass:
@@ -115,8 +153,11 @@ zellij --version && echo "✓ Zellij"
 git --version && echo "✓ Git"
 jq --version && echo "✓ jq"
 command -v kiro-cli && echo "✓ Kiro CLI"
+command -v kiro-ctl && echo "✓ kiro-ctl"
+systemctl --user is-active kiro-sessiond && echo "✓ Session daemon"
 test -f ~/.config/zellij/config.kdl && echo "✓ Zellij config"
 test -d ~/.kiro/agents && echo "✓ Agent config dir"
+npx playwright --version && echo "✓ Playwright"
 ```
 
 ## Corporate Environment Extras

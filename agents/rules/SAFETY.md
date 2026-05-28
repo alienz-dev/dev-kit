@@ -18,7 +18,7 @@ npm test < /dev/null
 ```
 
 ### Background Server Pattern (CRITICAL)
-**Problem:** `execute_bash` pipes stdout. Backgrounded servers inherit the pipe fd, blocking the agent CLI on EOF forever.
+**Problem:** TUI mode captures stdout to temp files. Backgrounded servers that inherit the pipe fd can block the agent CLI on EOF.
 
 **Rule:** Use a dedicated launcher for background processes:
 ```bash

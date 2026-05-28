@@ -9,9 +9,9 @@ Universal safety rules loaded into every agent session. Procedural rules (issue 
 
 ## Tool Execution Safety
 
-> [!error] **Append `< /dev/null` to every `execute_bash` command.** kiro-cli spawns child processes with `stdin(Stdio::inherit())`. Any command that reads stdin hangs the entire session with no recovery. Ctrl+C cannot interrupt. **Always** end commands with `< /dev/null`. This is non-negotiable.
+> [!info] **`< /dev/null` is handled structurally.** TUI mode (kiro-bash-guard.sh) closes stdin, captures stdout to temp files, and applies 300s timeout for ALL commands. Appending `< /dev/null` is harmless but no longer mandatory.
 
-> [!error] **Use `start-server.sh` for background servers.** `execute_bash` pipes stdout — backgrounded servers inherit the pipe fd, blocking kiro-cli on EOF forever. `< /dev/null` only fixes stdin. The ONLY safe patterns: (1) `start-server.sh <port> /tmp/<name>.log [--wait N] -- <command>`, (2) `cmd > /tmp/log 2>&1 < /dev/null &`. To stop: `stop-server.sh <port>`.
+> [!info] **Background servers use `start-server.sh`.** TUI mode captures stdout to temp files (breaking fd inheritance), so raw backgrounding no longer hangs. `start-server.sh` is still the recommended pattern for readability and port management.
 
 > [!error] **Never change vitest pool:threads to pool:forks.** `pool: 'forks'` spawns workers that survive parent exit — orphans at ~2GB each. 6 workers = 13GB = system OOM. If tests are flaky with threads, fix test isolation — do NOT switch to forks.
 
@@ -29,6 +29,8 @@ Universal safety rules loaded into every agent session. Procedural rules (issue 
 
 > [!error] **Non-destructive verification only.** When testing fixes, never inject text into live agent panes, send messages to real crew roles, write to active DBs, or trigger actions that consume agent context. Verification must be read-only or use isolated targets.
 
+> [!error] **Fail visibly, not silently.** Never report success when something was skipped or bypassed. Surface every: skipped record, rolled-back transaction, constraint violation, unhandled edge case, partial result. "14/15 succeeded, 1 skipped: [reason]" — not "migration complete."
+
 ---
 
 ## Anti-Destruction
@@ -36,6 +38,10 @@ Universal safety rules loaded into every agent session. Procedural rules (issue 
 > [!error] **Never discard uncommitted work from other agents.** When `git status` shows modified/untracked files you didn't create, NEVER run `git checkout --`, `git clean`, or `rm` on them without explicit user confirmation. Safe pattern: (1) show the user the file list, (2) ask "keep, stash, or discard?", (3) if discarding, use `git stash push -m "coder-<id>-extra" -- <files>`.
 
 > [!error] **Scope: solve what was asked, no bonus features.** Do not refactor adjacent code, add unrequested error handling, "improve" naming in files you're touching, or close resources you don't own. Only modify files explicitly in scope. When given owned-files declarations, treat everything else as read-only.
+
+> [!error] **Convention beats novelty.** In an established codebase, match the existing pattern even if a "better" one exists. Introducing a second pattern is worse than either pattern alone. If you believe the existing pattern should change, flag it as a separate task — don't mix it into the current work.
+
+> [!error] **Surface conflicts, don't average them.** When two parts of the codebase use conflicting patterns (error handling, state management, naming conventions), do NOT combine both. Flag the conflict, state which pattern each location uses, and ask which to follow.
 
 ---
 

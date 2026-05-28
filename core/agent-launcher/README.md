@@ -2,38 +2,58 @@
 
 ## Status: Complete (production)
 
-The agent launcher (`scripts/kiro-sub.sh`) is a production-tested 762-line bash script that handles the full spawn lifecycle. It's the actual script used daily across watchdog, krew-cli, neo-ui, and studenths projects.
+Agent spawning is handled by `kiro-ctl` (daemon CLI) as the primary method, with `kiro-sub.sh` as a low-level fallback when the daemon is unavailable.
 
 ## Problem
 
 Spawning agents requires: tab creation, briefing injection, context setup, result monitoring, cleanup. Without a launcher, each spawn is manual and error-prone.
 
-## Core Script: spawn.sh
+## Primary: kiro-ctl spawn
 
 ```bash
-spawn.sh "<task description>" \
+kiro-ctl spawn <agent> "<task description>" \
+  --subscribe              # Get notified on completion via EventBus
+  --workdir <path>         # Working directory for the agent
+  [--context <file>]       # Additional context file
+  [--topic]                # Persistent tab (no auto-close)
+  [--headless]             # Invisible floating pane
+```
+
+### Completion Tracking (--subscribe)
+
+With `--subscribe`, the daemon's EventBus notifies the parent when the child:
+- Completes: `[system] [DONE] <agent> completed. Result: /tmp/kiro-sub-<id>-result.md`
+- Errors: `[system] [ERROR] <agent> failed. Result: /tmp/kiro-sub-<id>-result.md`
+- Hangs: `[system] [HUNG] <agent> idle >300s. Pane: <id>`
+
+No polling needed — notifications injected into parent's TUI queue.
+
+## Low-Level Fallback: kiro-sub.sh
+
+When daemon is unavailable (e.g., fresh machine setup before daemon installed):
+
+```bash
+kiro-sub.sh "<task description>" \
   --role <role>           # supervisor|coder|tester|reviewer|planner
   --workdir <path>        # Working directory for the agent
-  [--context <file>]      # Additional context file to include in briefing
+  [--context <file>]      # Additional context file
   [--topic]               # Persistent tab (no auto-close)
-  [--headless]            # Invisible floating pane
-  [--tab-name <name>]     # Custom tab name
-  [--result <path>]       # Where agent writes result (enables parent notification)
+  [--result <path>]       # Where agent writes result
   [--parent <pane-id>]    # Parent pane to notify on completion
 ```
 
 ## Lifecycle
 
 ```
-spawn.sh called
-  → Generate unique ID
-  → Create briefing file (/tmp/<id>-briefing.md)
-  → Create launcher script (/tmp/<id>-launch.sh)
-  → Create zellij tab (--close-on-exit)
-  → Launcher starts agent CLI with briefing
+kiro-ctl spawn called
+  → Daemon generates unique ID
+  → Daemon creates briefing file (/tmp/<id>-briefing.md)
+  → Daemon creates zellij tab (--close-on-exit)
+  → kiro-cli --tui --agent <role> starts in tab
+  → Briefing injected as first user message
   → Agent works...
   → Agent writes result file
-  → Launcher detects result → notifies parent → exits (tab closes)
+  → Daemon detects result → notifies parent via EventBus → tab closes
 ```
 
 ## Briefing Format
@@ -59,52 +79,30 @@ spawn.sh called
 
 ## Tab Lifecycle Control
 
-**Key insight:** The LAUNCHER controls tab lifecycle, not the agent.
+The DAEMON controls tab lifecycle, not the agent:
 
 ```
 Tab created with --close-on-exit
-  └── Launcher script is the tab process
-        ├── Agent CLI runs inside launcher
-        ├── On success: agent writes result → launcher exits 0 → tab closes
-        ├── On crash: launcher detects, waits 5s, exits 1 → tab closes
-        ├── On timeout: launcher kills agent, exits 1 → tab closes
-        └── On user interrupt (Ctrl+C): exec bash → tab stays open
+  └── kiro-cli --tui is the tab process
+        ├── On success: agent writes result → daemon detects → notifies parent → tab closes
+        ├── On crash: daemon detects, logs error, notifies parent
+        ├── On timeout: daemon kills agent, notifies parent
+        └── On hang: daemon detects idle, notifies parent
 ```
 
-## Parent Notification
-
-When `--result` and `--parent` are specified:
-1. Agent writes result to `--result` path
-2. Launcher detects file creation
-3. Launcher injects message into parent pane:
-   ```bash
-   pane-inject.sh <parent-pane-id> "check /tmp/<id>-result.md"
-   ```
-4. Launcher exits (tab closes)
-
-If parent is busy (not at prompt), injection is skipped but result file remains on disk.
-
-## Fire-and-Forget vs Interactive
+## Fire-and-Forget vs Persistent
 
 | Mode | Tab Closes | User Input | Use Case |
 |------|-----------|------------|----------|
-| Fire-and-forget | On completion | None | Coder, tester, reviewer |
-| Interactive | Never (--topic) | Yes | Test-manager, planner |
-
-## Cleanup
-
-On exit (success or failure):
-- Remove briefing file
-- Remove launcher script
-- Remove generated agent JSON (if throwaway)
-- Keep result file (parent needs it)
-- Keep stderr log (for debugging)
+| Fire-and-forget | On completion | None | Coder, reviewer, explorer |
+| Persistent (--topic) | Never | Yes | Test-manager, planner |
+| Headless (--headless) | On completion | None | Reviewer-lite, background tasks |
 
 ## Error Handling
 
 | Failure | Detection | Action |
 |---------|-----------|--------|
-| Agent crashes | Non-zero exit | Write crash report to result path, notify parent |
-| Agent hangs | Timeout (configurable) | Kill agent, write timeout report |
-| Tab killed externally | Launcher trap | Best-effort cleanup |
-| Agent writes no result | Timeout | Write "no result" to result path |
+| Agent crashes | Non-zero exit | Write crash report, notify parent |
+| Agent hangs | Idle timeout (300s) | Notify parent, optionally kill + respawn |
+| Tab killed externally | Daemon registry check | Mark as failed, notify parent |
+| Agent writes no result | Timeout | Write "no result" report, notify parent |

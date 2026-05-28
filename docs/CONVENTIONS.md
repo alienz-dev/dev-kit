@@ -74,3 +74,13 @@ Full words over abbreviations. Function names encode intent.
 - Moderate duplication > abstraction agents can't trace
 - No dynamic dispatch for control flow
 - Structured docs > monolithic dumps
+
+## Behavioral Discipline
+
+Match existing patterns. In an established codebase, introducing a second pattern is worse than either pattern alone — even if yours is "better." Flag it as a separate task if you want to change the convention.
+
+Surface conflicts. When two parts of the codebase disagree on a pattern, don't combine both into incoherent code. Flag the disagreement and ask which to follow.
+
+Fail visibly. Never report success when something was skipped. "14/15 succeeded, 1 skipped: [reason]" — not "done."
+
+Tests verify behavior. A test that checks a function returns *something* without checking it returns the *right thing* is a failure. Every assertion must be falsifiable.
