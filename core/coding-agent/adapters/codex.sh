@@ -1,27 +1,23 @@
 #!/bin/bash
-# Adapter: Claude Code (headless mode)
-# Requires: claude CLI installed
+# Adapter: OpenAI Codex CLI
+# Requires: codex CLI installed
 set -euo pipefail
 source "$(dirname "$0")/base.sh"
 
 BRIEFING="$1"
 WORKDIR="$2"
 RESULT="$3"
-AGENT="claude-code"
+AGENT="codex"
 
 cd "$WORKDIR"
 START=$(date +%s)
 
-# Build args
-ARGS=(-p --bare --output-format json --allowedTools "Bash,Read,Edit")
+TASK=$(cat "$BRIEFING")
 
-# Add AGENTS.md as system prompt if present
-if [ -f AGENTS.md ]; then
-  ARGS+=(--append-system-prompt-file AGENTS.md)
-fi
+# Codex reads AGENTS.md natively from workdir — no extra flag needed
 
 # Run with timeout
-OUTPUT=$(timeout 300 claude "${ARGS[@]}" < "$BRIEFING" 2>&1) || EXIT_CODE=$?
+OUTPUT=$(timeout 300 codex exec "$TASK" --approval-mode full-auto --quiet 2>&1) || EXIT_CODE=$?
 EXIT_CODE=${EXIT_CODE:-0}
 
 DURATION=$(( $(date +%s) - START ))

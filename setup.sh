@@ -3,7 +3,22 @@
 # Idempotent: safe to run multiple times
 set -euo pipefail
 
-echo "=== dev-kit setup ==="
+# --- Mode parsing ---
+MODE="full"
+for arg in "$@"; do
+  case "$arg" in
+    --check) MODE="check" ;;
+    --minimal) MODE="minimal" ;;
+    --ci) MODE="ci" ;;
+  esac
+done
+
+# Auto-detect agent session — skip confirmations
+if [ -n "${KIRO_SESSION:-}" ] || [ -n "${CLAUDE_CODE:-}" ] || [ -n "${CODEX_SANDBOX:-}" ] || [ -n "${AI_AGENT:-}" ]; then
+  [ "$MODE" = "full" ] && MODE="ci"
+fi
+
+echo "=== dev-kit setup (mode: $MODE) ==="
 echo "Detecting environment..."
 
 OS="$(uname -s)"
@@ -65,11 +80,14 @@ else
 fi
 
 # --- Zellij ---
+if [ "$MODE" != "minimal" ]; then
 echo ""
 echo "=== Zellij ==="
 
 if command -v zellij &>/dev/null; then
   ok "Zellij $(zellij --version 2>/dev/null | head -1)"
+elif [ "$MODE" = "check" ]; then
+  fail "zellij not found"; MISSING=1
 else
   echo "Installing zellij..."
   mkdir -p ~/.local/bin
@@ -83,13 +101,17 @@ else
   fi
   if command -v zellij &>/dev/null; then ok "Zellij installed"; fi
 fi
+fi # end MODE != minimal
 
 # --- Kiro CLI ---
+if [ "$MODE" != "minimal" ]; then
 echo ""
 echo "=== Coding Agent (kiro-cli) ==="
 
 if command -v kiro-cli &>/dev/null; then
   ok "kiro-cli installed"
+elif [ "$MODE" = "check" ]; then
+  fail "kiro-cli not found"; MISSING=1
 else
   echo "Installing kiro-cli..."
   npm install -g @anthropic/kiro-cli 2>/dev/null && ok "kiro-cli installed" || {
@@ -98,17 +120,21 @@ else
     MISSING=1
   }
 fi
+fi # end MODE != minimal
 
 # --- Directory structure ---
 echo ""
 echo "=== Directory structure ==="
 
 mkdir -p ~/projects ~/plans ~/.local/bin
-mkdir -p ~/.kiro/{agents,rules,state,skills,hooks}
-mkdir -p ~/.config/zellij/{layouts,plugins}
+if [ "$MODE" != "minimal" ]; then
+  mkdir -p ~/.kiro/{agents,rules,state,skills,hooks}
+  mkdir -p ~/.config/zellij/{layouts,plugins}
+fi
 ok "Directories created"
 
 # --- Zellij config ---
+if [ "$MODE" != "minimal" ]; then
 echo ""
 echo "=== Zellij configuration ==="
 
@@ -132,6 +158,7 @@ if [ ! -f ~/.kiro/rules/client_rules.md ] || [ "${FORCE:-}" = "1" ]; then
 else
   ok "Rules exist (use FORCE=1 to overwrite)"
 fi
+fi # end MODE != minimal
 
 # --- PATH ---
 echo ""
@@ -145,6 +172,7 @@ else
 fi
 
 # --- Issue CLI ---
+if [ "$MODE" != "minimal" ]; then
 echo ""
 echo "=== Issue CLI ==="
 
@@ -159,18 +187,33 @@ if [ -d "$SCRIPT_DIR/tools/issue-cli" ] && [ -f "$SCRIPT_DIR/tools/issue-cli/pac
 else
   echo "  (issue-cli submodule not initialized — run: git submodule update --init)"
 fi
+fi # end MODE != minimal
 
 # --- Summary ---
 echo ""
 echo "=== Summary ==="
 
+if [ "$MODE" = "check" ]; then
+  if [ $MISSING -eq 0 ]; then
+    ok "All prerequisites satisfied"; exit 0
+  else
+    fail "Some prerequisites missing — see above"; exit 1
+  fi
+fi
+
 if [ $MISSING -eq 0 ]; then
   ok "All prerequisites satisfied"
   echo ""
-  echo "Next steps:"
-  echo "  1. Create your first project: ./scaffold.sh <project-name>"
-  echo "  2. Start a session: zellij --session <project-name>"
-  echo "  3. Launch agent: kiro-cli chat --agent <project-name>"
+  if [ "$MODE" = "minimal" ]; then
+    echo "Next steps:"
+    echo "  1. Create your first project: ./scaffold.sh --minimal <project-name>"
+    echo "  2. Start coding with any AI agent in the project directory"
+  else
+    echo "Next steps:"
+    echo "  1. Create your first project: ./scaffold.sh <project-name>"
+    echo "  2. Start a session: zellij --session <project-name>"
+    echo "  3. Launch agent: kiro-cli chat --agent <project-name>"
+  fi
 else
   fail "Some prerequisites missing — see above"
   echo ""

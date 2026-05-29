@@ -1,0 +1,22 @@
+pre-commit:
+  parallel: true
+  commands:
+    test-affected:
+      run: |
+        CHANGED=$(git diff --cached --name-only --diff-filter=d | grep -E '\.(ts|tsx|js|jsx)$' || true)
+        if [ -n "$CHANGED" ]; then
+          npx vitest run --reporter=verbose 2>&1 | tail -20
+        fi
+      stage_fixed: true
+    typecheck:
+      run: npm run typecheck 2>&1 | tail -5
+      stage_fixed: true
+    pipeline-stage-check:
+      run: |
+        if [ -f .pipeline/state.json ]; then
+          STAGE=$(cat .pipeline/state.json | grep -o '"stage":"[^"]*"' | cut -d'"' -f4)
+          if [ "$STAGE" != "sprint" ] && [ "$STAGE" != "review" ] && [ "$STAGE" != "done" ]; then
+            echo "⚠️  Pipeline at '$STAGE' — not at implementation stage. Commit anyway? Use --no-verify to skip."
+            exit 1
+          fi
+        fi

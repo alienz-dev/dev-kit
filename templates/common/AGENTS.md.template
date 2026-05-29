@@ -1,0 +1,55 @@
+# AGENTS.md — {{PROJECT_NAME}}
+
+## Overview
+<one line: what this project does + tech stack>
+
+## Commands
+- Install: `npm install`
+- Build: `npm run build`
+- Typecheck: `npm run typecheck`
+- Test all: `npm test`
+- Test single: `npx vitest run tests/<path>`
+- Lint: `npm run lint`
+
+## Coder Workflow (TRIO)
+1. Read this file (AGENTS.md)
+2. Read your briefing (task + test file paths)
+3. Read the failing tests — understand expected behavior
+4. Implement minimal code to make tests pass
+5. Run: `npm test` — verify GREEN
+6. Run: `npm run typecheck` — verify no type errors
+7. Write result to the path specified in your briefing
+
+DO NOT SKIP steps 5-6. If tests fail, fix before proceeding.
+DO NOT read specs/ directory — you work from tests only.
+
+## Code Style
+- TypeScript strict, no `any` — use `unknown` + guards
+- Full words in names: `processPayment()` not `procPay()`
+- Return types on all public functions
+- Tests verify behavior, not existence
+
+## Boundaries
+### ✅ Always safe
+- Read any file for understanding
+- Run tests, typecheck, lint
+- Modify files in src/ and tests/
+
+### 🚫 Never
+- Read specs/ (information barrier — you work from tests)
+- Modify STATUS.md, NEXT-SESSION.md, .agents/
+- Use `pool: 'forks'` in vitest (causes OOM)
+- Run raw `tsc --noEmit` (use `npm run typecheck`)
+- Force push, reset --hard, rm -rf
+
+## Testing
+- Runner: vitest (threads pool, NEVER forks)
+- Pattern: `tests/**/*.test.{ts,tsx}`
+- One change → verify → next change. Never stack unverified.
+
+## Project Structure
+- `src/` — source code (your primary output)
+- `tests/` — test files (your primary input)
+- `specs/` — DO NOT READ
+- `.agents/` — agent infrastructure (read-only)
+- `.pipeline/` — pipeline state (read-only)

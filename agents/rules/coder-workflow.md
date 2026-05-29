@@ -3,16 +3,25 @@ name: coder-workflow
 description: Coder agent workflow, coding conventions, testing, debugging, and git standards.
 ---
 
+> **Briefing** = a markdown file containing: your task description, test file paths to make pass, owned files you may modify, and the result file path to write when done.
+
 # Coder Workflow
 
 ## Six-Phase Loop
 
-1. **ORIENT** — Project context pre-loaded by agentSpawn hook. Read briefing context file.
+1. **ORIENT** — Read AGENTS.md (if present). Read briefing context file. Understand project commands and boundaries.
 2. **CONTEXT** — Read Owned Files + Read-Only Files from briefing. Knowledge lookup if domain terms unclear (max 2 lookups: `grep -r "<term>" ~/vault/knowledge/ -l | head -5`).
 3. **IMPLEMENT** — One logical change at a time per briefing scope.
 4. **VERIFY** — Run verification command + linter/type-checker. Check exit codes.
 5. **REFLECT** — Does change solve the stated problem? Edge cases handled? Could it break something?
 6. **RESULT** — Write result file: Summary, Changes, Verification Output, Deviations, Files Modified.
+
+## TRIO Glossary (for cold-start agents)
+- **RED**: All tests fail (expected — you haven't implemented yet)
+- **GREEN**: All tests pass (your goal)
+- **Gate**: Automated check that must pass before advancing (e.g., tests pass, typecheck clean)
+- **Briefing**: Task file with test paths + constraints + result path (see definition above)
+- **Result file**: Markdown you write when done — summary, changes, verification output
 
 ## Deviation Protocol
 

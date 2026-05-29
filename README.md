@@ -30,9 +30,28 @@ A repo you clone on a fresh machine to bootstrap a full AI-native development en
 ```bash
 git clone <this-repo> ~/dev-kit
 cd ~/dev-kit
+
+# Full setup (kiro + zellij + daemon)
 ./setup.sh              # interactive — detects OS, installs deps, configures
 ./scaffold.sh <name>    # create a new project with full infrastructure
+
+# Minimal setup (any AI tool, no daemon required)
+./setup.sh --minimal    # just node + git + directories
+./scaffold.sh <name> --minimal  # AGENTS.md + lefthook + pipeline state only
+
+# Check what's missing without installing
+./setup.sh --check
 ```
+
+## Modes
+
+| Mode | What You Get | Requires |
+|------|-------------|----------|
+| Full | Multi-agent orchestration, daemon, multiplexer, all gates | kiro-cli, zellij, kiro-sessiond |
+| Minimal | AGENTS.md, lefthook pre-commit, file-based pipeline | git, node, any AI coding tool |
+| Check | Reports missing tools, installs nothing | bash |
+
+See [docs/DEGRADED-MODE.md](docs/DEGRADED-MODE.md) for details on the 3 levels.
 
 ## Structure
 

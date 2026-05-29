@@ -2,6 +2,39 @@
 
 Complete guide to bootstrapping an AI-native development environment from zero.
 
+## Choose Your Path
+
+| Path | Time | What You Get |
+|------|------|-------------|
+| **Minimal** | 5 min | AGENTS.md + lefthook + any AI tool works |
+| **Full** | 20 min | Multi-agent orchestration, daemon, multiplexer |
+
+### Minimal Path (recommended to start)
+
+```bash
+# 1. Install Node.js 22 (via nvm, fnm, volta, or mise)
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
+source ~/.bashrc && nvm install 22
+
+# 2. Clone and setup
+git clone <this-repo> ~/dev-kit
+cd ~/dev-kit
+./setup.sh --minimal
+
+# 3. Create your first project
+./scaffold.sh my-project --minimal
+
+# 4. Start coding with any AI tool
+cd ~/projects/my-project
+# Use: claude, aider, codex, kiro-cli, cursor — all read AGENTS.md
+```
+
+That's it. The project has AGENTS.md (cross-tool instructions), lefthook.yml (pre-commit gate), and .pipeline/ (stage tracking). No daemon or multiplexer needed.
+
+### Full Path (below)
+
+For multi-agent orchestration with daemon, multiplexer, and all quality gates:
+
 ## Prerequisites
 
 | Component | Version | Purpose |

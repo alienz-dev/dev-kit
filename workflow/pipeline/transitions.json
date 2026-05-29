@@ -1,0 +1,13 @@
+{
+  "stages": ["plan", "test", "sprint", "review", "done", "failed"],
+  "transitions": {
+    "plan_ready": { "from": "plan", "to": "test" },
+    "tests_ready": { "from": "test", "to": "sprint" },
+    "sprint_complete": { "from": "sprint", "to": "review" },
+    "review_complete": { "from": "review", "to": "done" },
+    "stage_failed": { "from": "*", "to": "failed" },
+    "retry_plan": { "from": "failed", "to": "plan" },
+    "retry_test": { "from": "failed", "to": "test" },
+    "retry_sprint": { "from": "failed", "to": "sprint" }
+  }
+}

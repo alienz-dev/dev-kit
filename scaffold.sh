@@ -2,8 +2,19 @@
 # scaffold.sh — Create a new project with full AI-native development infrastructure
 set -euo pipefail
 
-NAME="${1:?Usage: scaffold.sh <project-name>}"
-PROJECT_DIR="${2:-$HOME/projects/$NAME}"
+NAME="${1:?Usage: scaffold.sh <project-name> [--minimal]}"
+MINIMAL=0
+for arg in "$@"; do
+  case "$arg" in --minimal) MINIMAL=1 ;; esac
+done
+# If --minimal is $2, use default project dir
+if [ "$MINIMAL" -eq 1 ] && [ "${2:-}" = "--minimal" ]; then
+  PROJECT_DIR="$HOME/projects/$NAME"
+elif [ "$MINIMAL" -eq 1 ] && [ "${3:-}" = "--minimal" ]; then
+  PROJECT_DIR="${2:-$HOME/projects/$NAME}"
+else
+  PROJECT_DIR="${2:-$HOME/projects/$NAME}"
+fi
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 if [ -d "$PROJECT_DIR/.git" ]; then
@@ -89,9 +100,13 @@ dist/
 EOF
 
 # --- Source dirs ---
-mkdir -p src tests specs issues plans docs
+mkdir -p src tests
+if [ "$MINIMAL" -eq 0 ]; then
+  mkdir -p specs issues plans docs
+fi
 
 # --- Agent infrastructure ---
+if [ "$MINIMAL" -eq 0 ]; then
 mkdir -p .agents/{knowledge,workspace,scripts,hooks}
 
 cat > .agents/knowledge/project.md << EOF
@@ -190,8 +205,10 @@ preflight:
     command: test -d node_modules
     fix: npm install
 EOF
+fi # end MINIMAL check for agent infrastructure
 
 # --- Specs ---
+if [ "$MINIMAL" -eq 0 ]; then
 cp "$SCRIPT_DIR/workflow/sdd/SDD.md" specs/SDD.md
 
 # --- Copy tools reference ---
@@ -278,8 +295,23 @@ cat > DECISIONS.md << EOF
 **Rationale:** Type safety catches errors early, vitest is fast, SDD ensures specs before code.
 **Consequences:** All features need specs. Tests run in threads (never forks).
 EOF
+fi # end MINIMAL check for specs/tools/NEXT-SESSION/DECISIONS
+
+# --- AGENTS.md (cross-tool instructions) ---
+sed "s/{{PROJECT_NAME}}/$NAME/g" "$SCRIPT_DIR/templates/common/AGENTS.md.template" > AGENTS.md
+ln -sf AGENTS.md CLAUDE.md
+
+# --- Lefthook (pre-commit gate) ---
+if [ -f "$SCRIPT_DIR/templates/common/lefthook.yml" ]; then
+  cp "$SCRIPT_DIR/templates/common/lefthook.yml" lefthook.yml
+fi
+
+# --- Pipeline state ---
+mkdir -p .pipeline
+cp "$SCRIPT_DIR/workflow/pipeline/transitions.json" .pipeline/transitions.json
 
 # --- Kiro agent JSON ---
+if [ "$MINIMAL" -eq 0 ]; then
 mkdir -p ~/.kiro/agents
 
 cat > ~/.kiro/agents/${NAME}.json << EOF
@@ -301,6 +333,7 @@ cat > ~/.kiro/agents/${NAME}.json << EOF
   ]
 }
 EOF
+fi # end MINIMAL check for kiro agent JSON
 
 # --- Install deps ---
 echo ""
