@@ -15,14 +15,14 @@ No compiled code, no package.json at root, no test suite to run.
 - `templates/` — project templates copied by scaffold
 - `agents/` — agent role definitions and rules
 - `workflow/` — SDD, TRIO, pipeline methodology
-- `tools/` — specialized tooling (explainer, issue-cli, ui-visual-check)
+- `tools/` — specialized tooling (explainer, issue-cli)
 
 ## Conventions
 
 - Shell scripts: bash, `set -euo pipefail`, idempotent
 - Docs: markdown, no line-length limit
 - Templates use `{{PROJECT_NAME}}` placeholders (substituted by scaffold.sh)
-- Submodules (`tools/issue-cli`, `tools/ui-visual-check`) require Bitbucket access
+- Submodules (`tools/issue-cli`) require GitHub access
 
 ## Language Bias
 

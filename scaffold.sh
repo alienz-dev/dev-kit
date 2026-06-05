@@ -97,6 +97,11 @@ dist/
 .env
 .env.local
 /tmp/
+
+# Playwright artifacts (baselines are tracked, these are not)
+test-results/
+playwright-report/
+blob-report/
 EOF
 
 # --- Source dirs ---
@@ -411,6 +416,80 @@ echo ".claude/settings.local.json" >> .gitignore
 # --- Lefthook (pre-commit gate) ---
 if [ -f "$SCRIPT_DIR/templates/common/lefthook.yml" ]; then
   cp "$SCRIPT_DIR/templates/common/lefthook.yml" lefthook.yml
+fi
+
+# --- Visual testing (Playwright) ---
+if [ "$MINIMAL" -eq 0 ]; then
+  VISUAL_DIR="$SCRIPT_DIR/templates/common/visual-testing"
+  if [ -d "$VISUAL_DIR" ]; then
+    # Copy Playwright config
+    cp "$VISUAL_DIR/playwright.config.ts" playwright.config.ts
+
+    # Copy visual test templates
+    mkdir -p tests/visual
+    cp "$VISUAL_DIR/tests/visual/"*.spec.ts tests/visual/ 2>/dev/null || true
+
+    # Create screenshots directory for baselines
+    mkdir -p screenshots/baselines
+    echo "# Visual regression baselines — commit these" > screenshots/baselines/.gitkeep
+
+    # Copy gate scripts to project (quality gates)
+    mkdir -p scripts
+    GATES_DIR="$SCRIPT_DIR/quality/gates"
+    for gate in visual-gate.sh visual-regression.sh accessibility-check.sh ui-visual-check.sh; do
+      if [ -f "$GATES_DIR/$gate" ]; then
+        cp "$GATES_DIR/$gate" "scripts/$gate"
+        chmod +x "scripts/$gate"
+      fi
+    done
+
+    # Create DESIGN.md template if it doesn't exist
+    mkdir -p docs
+    if [ ! -f "docs/DESIGN.md" ]; then
+      cat > docs/DESIGN.md << 'DESIGNEOF'
+# Design System
+
+## Colors
+- Primary: var(--color-primary) = #2563eb
+- Background: var(--color-bg) = #ffffff
+- Text: var(--color-text) = #1f2937
+
+## Spacing
+- xs: 4px, sm: 8px, md: 16px, lg: 24px, xl: 32px
+
+## Typography
+- Body: 16px/1.5 Inter
+- Heading: 24px/1.2 Inter Bold
+
+## Components
+- Button: min-height 44px, border-radius 6px
+- Card: padding 16px, border 1px solid var(--color-border)
+- Input: height 40px, padding 8px 12px
+
+## Layout
+- Max content width: 1200px
+- Sidebar: 256px fixed
+- Grid gap: 16px
+DESIGNEOF
+    fi
+
+    # Add Playwright + axe-core to devDependencies
+    # (will be installed by npm install below)
+    if ! node --input-type=module -e "
+      import { readFileSync, writeFileSync } from 'fs';
+      const pkg = JSON.parse(readFileSync('./package.json', 'utf-8'));
+      pkg.devDependencies = pkg.devDependencies || {};
+      pkg.devDependencies['@playwright/test'] = '^1.50.0';
+      pkg.devDependencies['@axe-core/playwright'] = '^4.10.0';
+      pkg.scripts = pkg.scripts || {};
+      pkg.scripts['test:visual'] = 'npx playwright test --project=visual';
+      pkg.scripts['test:a11y'] = 'npx playwright test --project=a11y';
+      pkg.scripts['test:visual:update'] = 'npx playwright test --project=visual --update-snapshots';
+      writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+    " 2>&1; then
+      echo "WARNING: Failed to add Playwright dependencies to package.json"
+    fi
+  fi
 fi
 
 # --- Pipeline state ---

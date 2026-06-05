@@ -71,13 +71,18 @@ hidden → activation → review
 After GREEN, if the changeset includes UI files (.tsx, .jsx, .vue, .svelte, .css, .scss, .html, .ejs, .hbs):
 
 ```bash
-quality/gates/ui-visual-check.sh --gate --baseline <project>/screenshots/baselines \
-  --url <dev-server-url> --files <changed> --design DESIGN.md
+quality/gates/visual-gate.sh --gate --url <dev-server-url> --files <changed-ui-files> \
+  --design DESIGN.md --severity serious
 ```
 
-**Pass:** `--save-baseline`, proceed to next gate.
-**Fail:** Re-dispatch coder with visual findings (max 2 visual retries).
-**No dev server:** `--files` only (Layer 1 static lint).
+The composed gate runs three layers:
+1. **Layer 1: Static Analysis** — `ui-visual-check.sh` (always runs, <5s, no browser)
+2. **Layer 2: Visual Regression** — `visual-regression.sh` (Playwright screenshots, needs dev server)
+3. **Layer 3: Accessibility** — `accessibility-check.sh` (axe-core WCAG checks, needs dev server)
+
+**Pass:** All layers pass, proceed to next gate.
+**Fail:** Re-dispatch coder with findings from failing layer (max 2 visual retries).
+**No dev server:** Layer 1 only (static lint), Layers 2/3 skipped gracefully.
 
 ## Backward Transitions (Rework)
 

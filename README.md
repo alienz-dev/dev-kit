@@ -10,8 +10,7 @@ A repo you clone on a fresh machine to bootstrap a full AI-native development en
 - Multi-agent orchestration (supervisor → test-manager → sprint-manager → coder)
 - ARIA v2 research protocol (parallel explorers + adversarial critic)
 - Tiered code review (3 tiers, auto-promotion for sensitive paths)
-- UI visual quality gates (static + VLM + DOM heuristics)
-- Design system iteration tools (autonomous feedback loop)
+- UI visual quality gates (static analysis + Playwright regression + axe-core accessibility)
 - Data analyst agent (sandboxed iterative analysis)
 - Issue tracking with lifecycle gates
 - Session management and persistence
@@ -54,9 +53,9 @@ cd ~/dev-kit
 ./setup.sh --check
 ```
 
-> **Note:** `tools/issue-cli` and `tools/ui-visual-check` are optional submodules.
-> Update `.gitmodules` with your own repository URLs, or remove the submodules
-> if you don't need these tools. The core toolkit works without them.
+> **Note:** `tools/issue-cli` is an optional submodule.
+> Update `.gitmodules` with your own repository URL, or remove the submodule
+> if you don't need it. The core toolkit works without it.
 
 ### Start coding
 
@@ -103,17 +102,16 @@ dev-kit/
 │   └── hooks/                  # Agent spawn hooks, context injection
 │
 ├── quality/                    # Quality gates
-│   ├── ui-visual-check/        # CDP screenshot + VLM + heuristic checks
+│   ├── gates/                  # Gate scripts (visual-regression, accessibility, etc.)
+│   ├── ui-visual-check/        # VISUAL gate spec and DESIGN.md template
 │   ├── review/                 # Tiered review system (3 tiers)
 │   ├── pre-commit/             # Test gate, typecheck, lint
 │   └── regression/             # Regression test patterns
 │
 ├── tools/                      # Specialized tooling
-│   ├── design-system/          # Design iteration tools (sandbox, grade, iterate)
 │   ├── data-analyst/           # Iterative analysis agent (sandboxed)
 │   ├── explainer/              # Marketing page generator
-│   ├── issue-cli/              # Issue tracking CLI (submodule)
-│   └── ui-visual-check/        # Visual QA tool (submodule)
+│   └── issue-cli/              # Issue tracking CLI (submodule)
 │
 ├── templates/                  # Project templates
 │   ├── common/                 # Shared: lefthook, agent rules, skills
