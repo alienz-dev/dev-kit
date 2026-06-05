@@ -73,7 +73,7 @@ Pre-check failures are included in the review report but don't block the LLM rev
 
 ## Review Memory
 
-Persistent learning at `~/vault/state/review-memory.md`:
+Persistent learning at project review memory:
 
 ```markdown
 ## False Positives (suppress these)
@@ -85,8 +85,8 @@ Persistent learning at `~/vault/state/review-memory.md`:
 - Allow single-letter variables in lambda/arrow functions
 
 ## Project-Specific Patterns
-- watchdog: vitest pool must be 'threads' (not a bug)
-- neo-ui: CSS modules use camelCase (not kebab-case)
+- vitest pool must be 'threads' (not a bug)
+- CSS modules use camelCase (not kebab-case)
 ```
 
 Reviewer loads review memory and suppresses known false positives before generating findings.
@@ -95,12 +95,14 @@ Reviewer loads review memory and suppresses known false positives before generat
 
 Sprint-manager reads `## Review Tier: N` from its briefing (set by supervisor based on complexity score). If not specified, defaults to Tier 2.
 
-```bash
-# Tier 2
-kiro-ctl spawn reviewer-lite "Review wave 1 changes" --subscribe --headless
+```
+# Claude Code
+Agent(reviewer-lite: "Review wave 1 changes")   # Tier 2
+Agent(reviewer: "Full review for PROJ-042")      # Tier 3
 
-# Tier 3
-kiro-ctl spawn reviewer "Full review for PROJ-042" --subscribe --headless
+# File-based dispatch
+Agent(reviewer-lite: "Review wave 1 changes")   # Tier 2
+Agent(reviewer: "Full review for PROJ-042")      # Tier 3
 ```
 
 ## Timeout Behavior

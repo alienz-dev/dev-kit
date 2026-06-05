@@ -347,11 +347,11 @@ def generate_html(data, tokens):
         header = f'<div class="hero"><h1>{title}</h1>{sub_html}</div>'
 
     theme_js = """<script>
-function toggleTheme(){var c=localStorage.getItem('kiro-theme-pref')||'auto';var n=c==='auto'?'light':(c==='light'?'dark':'auto');localStorage.setItem('kiro-theme-pref',n);var h=new Date().getHours();var t=n==='auto'?((h>=6&&h<20)?'light':'dark'):n;document.documentElement.setAttribute('data-theme',t);document.querySelector('.theme-toggle').textContent=n==='auto'?'\\u{1f504}':(n==='light'?'\\u2600\\ufe0f':'\\u{1f319}');if(window.__reRenderMermaid)window.__reRenderMermaid(t!=='light');}
-document.querySelector('.theme-toggle').textContent=(localStorage.getItem('kiro-theme-pref')||'auto')==='auto'?'\\u{1f504}':((localStorage.getItem('kiro-theme-pref')==='light')?'\\u2600\\ufe0f':'\\u{1f319}');
+function toggleTheme(){var c=localStorage.getItem('devkit-theme-pref')||'auto';var n=c==='auto'?'light':(c==='light'?'dark':'auto');localStorage.setItem('devkit-theme-pref',n);var h=new Date().getHours();var t=n==='auto'?((h>=6&&h<20)?'light':'dark'):n;document.documentElement.setAttribute('data-theme',t);document.querySelector('.theme-toggle').textContent=n==='auto'?'\\u{1f504}':(n==='light'?'\\u2600\\ufe0f':'\\u{1f319}');if(window.__reRenderMermaid)window.__reRenderMermaid(t!=='light');}
+document.querySelector('.theme-toggle').textContent=(localStorage.getItem('devkit-theme-pref')||'auto')==='auto'?'\\u{1f504}':((localStorage.getItem('devkit-theme-pref')==='light')?'\\u2600\\ufe0f':'\\u{1f319}');
 </script>"""
 
-    init_js = """<script>(function(){var p=localStorage.getItem('kiro-theme-pref')||'auto';var h=new Date().getHours();var t=p==='auto'?((h>=6&&h<20)?'light':'dark'):p;document.documentElement.setAttribute('data-theme',t);})();</script>"""
+    init_js = """<script>(function(){var p=localStorage.getItem('devkit-theme-pref')||'auto';var h=new Date().getHours();var t=p==='auto'?((h>=6&&h<20)?'light':'dark'):p;document.documentElement.setAttribute('data-theme',t);})();</script>"""
 
     return f"""<!DOCTYPE html>
 <html lang="en">
@@ -431,11 +431,21 @@ def main():
         print(args.output)
 
         if not args.no_open:
+            import tempfile
             fname = Path(args.output).name
-            win_tmp = Path("/mnt/c/Users/MingL/AppData/Local/Temp") / fname
-            shutil.copy2(args.output, win_tmp)
-            subprocess.Popen(["cmd.exe", "/c", "start", "", f"C:\\Users\\MingL\\AppData\\Local\\Temp\\{fname}"],
-                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            tmp_dir = Path(tempfile.gettempdir())
+            tmp_file = tmp_dir / fname
+            shutil.copy2(args.output, tmp_file)
+            # Try to open with system default handler
+            if sys.platform == "win32":
+                subprocess.Popen(["cmd.exe", "/c", "start", "", str(tmp_file)],
+                                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            elif sys.platform == "darwin":
+                subprocess.Popen(["open", str(tmp_file)],
+                                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            else:
+                subprocess.Popen(["xdg-open", str(tmp_file)],
+                                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
         return 1

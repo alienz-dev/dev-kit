@@ -39,9 +39,8 @@ Solution discovery scoring (5 signals × 0-2 each):
 - **Output:** Findings file at specified /tmp/ path
 - **Lifecycle:** Ephemeral — writes output, self-closes
 
-```bash
-kiro-ctl spawn explorer "Investigate pagination patterns in similar OSS projects" \
-  --subscribe --workdir ~/projects/app
+```
+Agent(explorer: "Investigate pagination patterns in similar OSS projects")
 ```
 
 ## Research-Critic Role
@@ -51,9 +50,8 @@ kiro-ctl spawn explorer "Investigate pagination patterns in similar OSS projects
 - **Purpose:** Challenge assumptions, find gaps, identify contradictions
 - **Spawned:** AFTER all explorers complete (never concurrent)
 
-```bash
-kiro-ctl spawn research-critic "Challenge this synthesis: /tmp/research-synthesis.md" \
-  --subscribe
+```
+Agent(research-critic: "Challenge this synthesis: /tmp/research-synthesis.md")
 ```
 
 ## Why Fresh Context for Critic?

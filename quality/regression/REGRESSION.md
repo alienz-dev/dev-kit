@@ -85,7 +85,7 @@ runStoreConformance(() => new PostgresStore(testConnectionString));
 
 ## Pre-Commit Gate
 
-Production-tested script from watchdog. See `quality/pre-commit/pre-commit-test-gate.sh`.
+Production-tested script. See `quality/pre-commit/pre-commit-test-gate.sh`.
 
 Key features:
 - Runs only tests affected by staged changes

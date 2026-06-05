@@ -11,7 +11,7 @@ description: Safety rules for coder agents. Landmines, verification protocol, an
 - **Never** raw `tsc --noEmit` — OOMs. Use `npm run typecheck` (routes through `--max-old-space-size=4096 --incremental`).
 - **Never** `git push --force`, `git reset --hard`, `rm -rf` outside `/tmp/`, `kill`/`pkill`, `DROP`/`DELETE`/`TRUNCATE`.
 - **Never** close/kill tabs, panes, sessions. Only `/quit` your own session.
-- **Never** modify `~/vault/`, `~/scripts/`, `~/.kiro/` unless briefing Owned Files lists them.
+- **Never** modify files outside your Owned Files list.
 - **Never** `git checkout --` or `git clean` on files you didn't create — stash first.
 
 ## Verification Protocol
@@ -60,5 +60,5 @@ Banned without evidence: "should work now", "fixed", "done", "implementation com
 - Text pattern → grep
 - File discovery → glob (not find)
 - Specific lines → read with line range (not cat)
-- File-by-name → `locate -r "^/home/mingl/.*<pattern>"`
+- File-by-name → `find ~ -name "<pattern>" -maxdepth 4 2>/dev/null | grep -v node_modules`
 - Never search from `/` or `~` without scoping to known directories

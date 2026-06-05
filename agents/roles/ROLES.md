@@ -1,26 +1,40 @@
 # Agent Roles
 
+## Claude Code Agent Mapping
+
+| dev-kit Role | Claude Code Agent | Location |
+|-------------|------------------|----------|
+| Supervisor/Planner | Main Claude Code session | (interactive) |
+| Coder | `.claude/agents/coder.md` | `Agent(subagent_type="coder")` |
+| Reviewer | `.claude/agents/reviewer.md` | `Agent(subagent_type="reviewer")` |
+| Test-Manager | `.claude/agents/test-manager.md` | `Agent(subagent_type="test-manager")` |
+| Researcher | `.claude/agents/researcher.md` | `Agent(subagent_type="researcher")` |
+| Explorer | `.claude/agents/explorer.md` | `Agent(subagent_type="explorer")` |
+| Sprint-Manager | Main session orchestration | (sequential dispatch) |
+
+Claude Code spawns in-process subagents via the `Agent()` tool. No daemon or multiplexer needed.
+
 ## Role Architecture
 
 ```
 User
-  └── Planner/Supervisor (orchestrator, persistent)
-        ├── Researcher (ARIA v2 orchestrator — ephemeral)
-        │     ├── Explorer ×N (focused investigation — ephemeral, parallel)
-        │     └── Research-Critic (adversarial review — ephemeral)
-        ├── UI-Designer (Phase 0, complexity 6+ UI — ephemeral)
-        ├── Test-Manager (owns RED gate — persistent per feature)
-        └── Sprint-Manager (owns GREEN→REVIEW — ephemeral)
-              ├── Coder ×N (implementation — ephemeral, parallel)
-              ├── Reviewer-Lite (Tier 2 review — ephemeral)
-              └── Reviewer (Tier 3 review — ephemeral)
+  └── Main Session (Planner + Sprint-Manager — persistent)
+        ├── Test-Manager (subagent — owns RED gate)
+        ├── Coder ×N (subagent, worktree-isolated — max 3 parallel per wave)
+        ├── Reviewer (subagent — verifies spec intent match)
+        ├── Researcher (subagent — ARIA v2 orchestrator)
+        │     ├── Explorer ×N (subagent — focused investigation, parallel)
+        │     └── Research-Critic (subagent — adversarial review)
+        └── UI-Designer (subagent — Phase 0, complexity 6+ UI)
 ```
+
+**Key constraint:** Subagents cannot spawn subagents. The main session acts as Sprint-Manager, directly orchestrating coder waves, gate sequences, and reviewer dispatch. The `/trio` skill guides the main session through this orchestration.
 
 ## Dispatch Rules
 
 | From | To | Policy |
 |------|-----|--------|
-| Planner/Supervisor | Coder | **NEVER** (daemon-enforced) |
+| Planner/Supervisor | Coder | **NEVER** (structurally enforced by agent role definition) |
 | Planner/Supervisor | Sprint-Manager | ALWAYS (for implementation) |
 | Planner/Supervisor | Test-Manager | ALWAYS (for RED gate) |
 | Sprint-Manager | Coder | **ALWAYS** (max 3 parallel, no file overlap) |
@@ -45,9 +59,9 @@ User
 **Cannot:**
 - Write src/, tests/, *.ts, *.tsx, *.js, *.py
 - Modify package.json, tsconfig.json, vitest.config.*
-- Spawn coders directly (daemon-enforced)
+- Spawn coders directly (structurally enforced by agent role definition)
 
-**Enforcement:** `deniedPaths` in agent JSON blocks source file writes. Daemon role_policies block direct coder spawns.
+**Enforcement:** Write boundaries are defined in the agent role prompt (prompt-enforced). Direct coder spawns are blocked by role definition in the agent prompt.
 
 **Behavior:**
 1. On session start: read state files, present status, ask for direction
@@ -105,10 +119,13 @@ User
 
 **Behavior:**
 1. Receive plan + test_map from supervisor
-2. Dispatch coders in waves (max 3 parallel, no file overlap)
-3. After each wave: run gate sequence (trio-preflight → GREEN → wiring → visual → wave-smoke)
-4. After all waves: hidden → activation → spawn reviewer (tier 2 or 3)
-5. Report result to supervisor
+2. Create worktrees for parallel coders: `git worktree add .worktrees/coder-<id> -b coder-<id>`
+3. Dispatch coders in waves (max 3 parallel, worktree-isolated)
+4. After each wave: run gate sequence (trio-preflight → GREEN → wiring → visual → wave-smoke)
+5. After all waves: hidden → activation → spawn reviewer (tier 2 or 3)
+6. Merge worktrees sequentially: rebase onto main, fast-forward merge
+7. Clean up worktrees: `git worktree remove .worktrees/coder-<id>`
+8. Report result to supervisor
 
 **Retry logic:**
 - GREEN fail: max 3 retries (re-dispatch coder with failure context)
@@ -159,11 +176,16 @@ User
 - Write: .agents/knowledge/, STATUS.md, issues/
 
 **Behavior:**
-1. Receive briefing from sprint-manager: "Make these tests pass: [paths]"
+1. Receive briefing from sprint-manager: "Make these tests pass: [paths]" (includes worktree path)
 2. Read the failing tests to understand expected behavior
 3. Implement minimal code to pass
 4. Run tests to verify
 5. Write result file, self-close
+
+**Worktree isolation:**
+- Each coder gets an isolated git worktree (`.worktrees/coder-<id>`)
+- Coders work in parallel without merge conflicts
+- After all coders complete, worktrees are merged sequentially
 
 **Key constraint:** Coder briefing contains test file paths and project context, but NEVER the spec. This forces implementation driven by test assertions, not spec prose.
 
@@ -321,11 +343,6 @@ User
   "description": "<Role> for <project>",
   "model": "claude-sonnet-4-20250514",
   "prompt": "<role-specific system prompt>",
-  "toolsSettings": {
-    "write": {
-      "deniedPaths": ["<paths this role cannot write>"]
-    }
-  },
   "tools": ["read", "write", "grep", "shell", "glob"],
   "resources": ["<context files loaded at start>"]
 }
@@ -333,36 +350,14 @@ User
 
 ## Spawning Pattern
 
-```bash
-# Primary dispatch method (daemon-driven, completion tracking)
-kiro-ctl spawn coder "Make these tests pass: tests/unit/pagination.test.ts" \
-  --subscribe --workdir ~/projects/my-app
-
-# Persistent (test-manager)
-kiro-ctl spawn test-manager "Own RED gate for PROJ-042" \
-  --topic --workdir ~/projects/my-app
-
-# Headless (invisible pane)
-kiro-ctl spawn reviewer-lite "Review PR #42" \
-  --headless --subscribe --workdir ~/projects/my-app
-
-# Low-level alternative (when daemon unavailable)
-kiro-sub.sh "task" --role coder --workdir ~/projects/my-app
 ```
+# Dispatch
+Agent({ prompt: "Make these tests pass: tests/unit/pagination.test.ts", subagent_type: "general-purpose" })
+Agent({ prompt: "Own RED gate for PROJ-042", subagent_type: "general-purpose" })
+Agent({ prompt: "Review PR #42", subagent_type: "general-purpose" })
 
-## Communication
-
-Agents communicate via daemon EventBus:
-- `--subscribe` flag: parent receives `[system]` notification when child completes/errors/hangs
-- Result files: `/tmp/kiro-sub-<id>-result.md`
-- No polling needed — daemon injects notifications into parent's TUI queue
-
-```bash
-# Spawn with completion tracking
-kiro-ctl spawn coder "task" --subscribe
-
-# Parent receives on child done:
-# [system] [DONE] coder completed. Result: /tmp/kiro-sub-<id>-result.md
+# Background dispatch (completion tracking)
+Agent({ prompt: "task", run_in_background: true })
 ```
 
 ---

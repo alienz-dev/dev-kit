@@ -4,39 +4,22 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    Terminal (WezTerm)                         │
+│                    Claude Code                               │
 │  ┌───────────────────────────────────────────────────────┐  │
-│  │              Zellij (multiplexer, locked mode)          │  │
+│  │  Agent() tool (in-process subagents)                  │  │
 │  │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌─────────┐ │  │
 │  │  │supervisor │ │test-mgr  │ │sprint-mgr│ │ coder×N │ │  │
-│  │  │  (tab)   │ │  (tab)   │ │  (tab)   │ │ (tabs)  │ │  │
+│  │  │  (main)  │ │(subagent)│ │(subagent)│ │(subagent│ │  │
 │  │  └────┬─────┘ └────┬─────┘ └────┬─────┘ └────┬────┘ │  │
 │  └───────┼────────────┼────────────┼────────────┼───────┘  │
 └──────────┼────────────┼────────────┼────────────┼───────────┘
            │            │            │            │
      ┌─────▼────────────▼────────────▼────────────▼──────┐
-     │         kiro-sessiond (REQUIRED daemon)            │
-     │  - Registry (who's running, what state)            │
-     │  - EventBus (--subscribe, completion signals)      │
-     │  - Pipeline FSM (stage enforcement)                │
-     │  - Role policies (spawn permission matrix)         │
-     │  - Hang detection (idle timeout, error loop)       │
-     │  - Tab replacement (kill hung, respawn)            │
-     └─────────────────────┬─────────────────────────────┘
-                           │
-     ┌─────────────────────▼─────────────────────────────┐
-     │         kiro-ctl (CLI interface to daemon)         │
-     │  - spawn <agent> "task" --subscribe --workdir      │
-     │  - pipeline create/advance/get                     │
-     │  - status, kill, list                              │
-     └─────────────────────┬─────────────────────────────┘
-                           │
-     ┌─────────────────────▼─────────────────────────────┐
-     │         Coding Agent CLI (kiro-cli --tui)          │
-     │  - TUI mode (stdin/stdout isolation)               │
-     │  - Tools: read, write, shell, grep, glob           │
-     │  - Agent JSON (role, model, prompt, deniedPaths)   │
-     │  - Alt: claude-code, aider, cursor-agent           │
+     │         Pipeline gate.sh (file-based FSM)           │
+     │  - .pipeline/state.json                            │
+     │  - transitions.json (single source of truth)       │
+     │    stages + gates + valid transitions               │
+     │  - Pre-commit hooks (lefthook)                     │
      └───────────────────────────────────────────────────┘
 ```
 
@@ -77,48 +60,37 @@
 
 ## Communication Patterns
 
-### Daemon EventBus (primary)
-```bash
-# Spawn with completion tracking
-kiro-ctl spawn coder "task" --subscribe --workdir ~/projects/app
-
-# Parent receives notification when child completes:
-# [system] [DONE] coder completed. Result: /tmp/kiro-sub-<id>-result.md
-# [system] [ERROR] coder failed. Result: /tmp/kiro-sub-<id>-result.md
-# [system] [HUNG] coder idle >300s. Pane: <id>
+### Claude Code (Agent tool)
+```javascript
+// Spawn with background tracking
+Agent({ prompt: "task", run_in_background: true })
+// Completion arrives as a notification in the session
 ```
-
-No polling needed — daemon injects `[system]` notifications into parent's TUI queue.
 
 ### Result Files
 ```
-/tmp/kiro-sub-<id>-result.md
+/tmp/agent-<id>-result.md
 ```
 
 ### State Files (persistent)
 ```
-~/.local/share/crew/
-  ├── crew-session.db      # Session registry (SQLite WAL)
-  ├── kiro-sessiond.log    # Daemon log
-  └── messages/            # Legacy message queue
+~/.state/
+  └── hot-memory-<workspace>.md   # Bounded curated context (3000 chars)
 ```
 
 ## Key Design Decisions
 
 | Decision | Alternative | Why This |
 |----------|-------------|----------|
-| kiro-sessiond required | Optional daemon | Agents skip gates without enforcement; EventBus eliminates polling |
-| kiro-ctl spawn | spawn.sh direct | Daemon tracks lifecycle, enforces role_policies, provides --subscribe |
-| TUI mode (--tui) | Classic mode | Structural stdin/stdout isolation, no < /dev/null needed |
 | Sprint-manager dispatches coders | Test-manager dispatches | Separation of concerns: RED vs GREEN ownership |
-| Daemon role_policies | Trust-based | planner→coder=NEVER enforced structurally |
-| Pipeline FSM | Ad-hoc state | Stages enforced, stall detection, recovery transitions |
+| Pipeline FSM | Ad-hoc state | Stages enforced via gate.sh (file-based), recovery transitions |
 | Pluggable agent interface | Hardcoded to one CLI | Teams use different tools; adapter pattern keeps core generic |
-| SQLite WAL state | Redis/Postgres | Zero setup, concurrent reads, portable |
-| Zellij tabs | Docker containers | Lower overhead, shared filesystem, visible to user |
 | Per-role deniedPaths | Trust-based | Agents WILL write outside scope without enforcement |
 
 ## Quality Gates (Full Pipeline)
+
+Sprint sub-gates are defined in `transitions.json` under `gates.sprint`.
+The sequence within the sprint stage:
 
 ```
 RED → GREEN → WIRING → VISUAL → HIDDEN → ACTIVATION → REVIEW
@@ -128,11 +100,12 @@ RED → GREEN → WIRING → VISUAL → HIDDEN → ACTIVATION → REVIEW
 |------|------|-------|-----------------|
 | RED | vitest (all fail) | Test-Manager | Tests verify behavior, not existence |
 | GREEN | vitest (all pass) | Sprint-Manager | Implementation satisfies tests |
-| WIRING | `entry-reachability.sh` | Sprint-Manager | Orphaned modules, dead imports |
-| VISUAL | `ui-visual-check.sh --gate` | Sprint-Manager | CSS regressions, token drift, layout breaks |
+| WIRING | `quality/gates/entry-reachability.sh` | Sprint-Manager | Orphaned modules, dead imports |
+| VISUAL | `quality/gates/ui-visual-check.sh` | Sprint-Manager | CSS regressions, token drift, layout breaks |
+| wave-smoke | `quality/gates/wave-smoke.sh` | Sprint-Manager | Uncommitted changes, merge conflicts, test failures |
 | HIDDEN | vitest (hidden tests) | Sprint-Manager | Behavioral invariants, contract violations |
-| ACTIVATION | `activation-gate.sh` | Sprint-Manager | Feature reachable from entry point |
-| REVIEW | reviewer-lite or reviewer | Sprint-Manager | Spec compliance, security, design quality |
+| ACTIVATION | `quality/gates/activation-gate.sh` | Sprint-Manager | Feature reachable from entry point |
+| REVIEW | `quality/gates/review-precheck.sh` | Sprint-Manager | TODO/FIXME comments, console.log, type errors |
 
 The VISUAL gate only runs when changeset includes UI files (.tsx, .jsx, .vue, .svelte, .css, .scss, .html, .ejs, .hbs).
 

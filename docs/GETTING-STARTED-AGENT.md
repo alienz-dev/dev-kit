@@ -1,6 +1,6 @@
 # Getting Started — For AI Coding Agents
 
-This guide is for any AI coding agent (kiro, claude-code, aider, codex, cursor) working in a dev-kit project.
+This guide is for any AI coding agent working in a dev-kit project.
 
 ## What This Project Uses
 

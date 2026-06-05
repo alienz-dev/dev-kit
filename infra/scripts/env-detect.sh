@@ -27,8 +27,7 @@ elif [ -n "${STY:-}" ]; then MUX="screen"
 else MUX="none"; fi
 
 # Agent CLI
-if command -v kiro-cli &>/dev/null; then AGENT_CLI="kiro-cli"
-elif command -v claude &>/dev/null; then AGENT_CLI="claude-code"
+if command -v claude &>/dev/null; then AGENT_CLI="claude-code"
 elif command -v aider &>/dev/null; then AGENT_CLI="aider"
 elif command -v codex &>/dev/null; then AGENT_CLI="codex"
 else AGENT_CLI="none"; fi
@@ -43,8 +42,7 @@ GIT=$(git --version 2>/dev/null | cut -d' ' -f3 || echo "not found")
 
 # Agent session
 AGENT_SESSION="no"
-if [ -n "${KIRO_SESSION:-}" ]; then AGENT_SESSION="yes (kiro)"
-elif [ -n "${CLAUDE_CODE:-}" ]; then AGENT_SESSION="yes (claude)"
+if [ -n "${CLAUDE_CODE:-}" ]; then AGENT_SESSION="yes (claude)"
 elif [ -n "${CODEX_SANDBOX:-}" ]; then AGENT_SESSION="yes (codex)"
 elif [ -n "${AI_AGENT:-}" ]; then AGENT_SESSION="yes (generic)"
 elif [ -n "${CI:-}" ]; then AGENT_SESSION="yes (ci)"; fi

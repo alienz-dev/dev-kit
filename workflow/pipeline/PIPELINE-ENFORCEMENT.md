@@ -1,6 +1,27 @@
 # Pipeline Enforcement
 
-Daemon-enforced FSM that prevents agents from skipping stages or spawning outside their authority.
+Three-tier enforcement model for pipeline stages, role boundaries, and behavioral constraints.
+
+## Enforcement Model
+
+| Tier | Mechanism | What It Enforces | Strength |
+|------|-----------|-----------------|----------|
+| **Code-enforced** | `gate.sh` (file-based FSM) | Pipeline stage progression, state tracking | Hard block — cannot bypass without modifying scripts |
+| **Code-enforced** | `lefthook` (pre-commit hooks) | Test gate, typecheck, lint before commit | Hard block — git rejects commit on failure |
+| **Prompt-enforced** | Agent role definitions | Role boundaries, spawn policies, write scopes | Soft block — agent honors constraint via system prompt |
+
+### What IS Enforced (Code-Enforced)
+
+- **Pipeline stage progression:** `gate.sh` tracks state in `.pipeline/state.json` and only allows valid transitions per `transitions.json`
+- **Pre-commit quality gates:** `lefthook` runs test gate, typecheck, and lint — commit is rejected on failure
+- **State file existence:** `gate.sh check` validates current stage before allowing advancement
+
+### What is NOT Enforced (Prompt-Only)
+
+- **Role spawn policies:** Agent role definitions instruct who can spawn whom, but no code blocks invalid spawns
+- **Write scope boundaries:** Agent role prompts define which paths each role can write, but enforcement depends on agent compliance
+- **Stall detection:** No active monitoring — agents must self-report stalls
+- **Stage-gated spawns:** Agent prompts specify which roles are valid at which stages, but no runtime check exists
 
 ## Pipeline Stages
 
@@ -26,7 +47,9 @@ plan → test → sprint → review → done | failed
 | failed | test | `retry_test` | Tests need rewriting |
 | failed | sprint | `retry_sprint` | Implementation retry |
 
-## Role Policies (Daemon-Enforced)
+## Role Policies (Prompt-Enforced)
+
+These policies are defined in agent role prompts. Agents honor them by convention, not by runtime enforcement.
 
 | Spawner | Target | Policy | Rationale |
 |---------|--------|--------|-----------|
@@ -54,35 +77,26 @@ Some spawns are only allowed during specific pipeline stages:
 ## Pipeline CLI
 
 ```bash
-# Create a pipeline for a feature
-kiro-ctl pipeline create --feature PROJ-042
-
-# Advance to next stage (with signal)
-kiro-ctl pipeline advance --signal tests_ready
-
-# Get current state
-kiro-ctl pipeline get
-
-# Auto-advance on spawn completion (--pipeline-topic flag)
-kiro-ctl spawn sprint-manager "task" --subscribe --pipeline-topic PROJ-042
+# File-based pipeline (no daemon required)
+bash workflow/pipeline/gate.sh init PROJ-042
+bash workflow/pipeline/gate.sh advance tests_ready
+bash workflow/pipeline/gate.sh status
+bash workflow/pipeline/gate.sh check sprint
 ```
 
-## Stall Detection
+## Stall Detection (Not Implemented)
 
-If no `pipeline advance` occurs within 600s, daemon signals stall:
-- Injects `[system] [STALL] Pipeline PROJ-042 stuck at stage: sprint (600s no-advance)` into supervisor pane
-- Does NOT auto-kill — supervisor decides next action
+There is no active stall detection. If the pipeline stalls, the supervisor must notice and intervene manually.
 
 ## Implementation
 
-Pipeline state stored in daemon's SQLite registry. Each pipeline record:
+Pipeline state stored in file-based JSON (no SQLite, no daemon):
 ```json
 {
   "id": "PROJ-042",
   "stage": "sprint",
-  "created_at": "2026-05-28T10:00:00Z",
-  "last_advance": "2026-05-28T10:15:00Z",
-  "history": ["plan→test (10:05)", "test→sprint (10:15)"],
-  "active_agents": ["sprint-manager-abc123", "coder-def456"]
+  "transitions": ["plan→test", "test→sprint"]
 }
 ```
+
+Managed by `gate.sh` commands — no background process required.

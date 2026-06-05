@@ -54,6 +54,7 @@ Lessons learned in agent sessions are lost. Errors repeat. Patterns aren't captu
 | Project-specific learning | `.agents/knowledge/` |
 | Session continuity | Workspace state file |
 | General investigation | `~/plans/` or knowledge base |
+| Actionable bug or improvement | `issue open "title" --project dev-kit --type bug|enhancement` |
 
 ### 5. Archive
 

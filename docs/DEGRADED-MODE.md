@@ -1,26 +1,19 @@
 # Degraded Mode Levels
 
-Three operational levels depending on available infrastructure.
+Two operational levels depending on available infrastructure.
 
-## Level 1: Full (daemon + multiplexer)
+## Level 1: Claude Code Native
 
-All infrastructure present: `kiro-sessiond`, Zellij, lefthook.
+Full experience with Claude Code's built-in multi-agent support.
 
-- Daemon enforces pipeline transitions and role policies
-- Agents spawn into multiplexer panes
-- Pre-commit hooks run automatically
-- Pipeline state managed by daemon
-
-## Level 2: Single-Agent (no daemon)
-
-Multiplexer available but no daemon. File-based state replaces daemon enforcement.
-
+- Subagents spawn in-process via `Agent()` tool
 - Pipeline state in `.pipeline/state.json` (managed by `gate.sh`)
 - Lefthook hooks enforce gates on commit
-- Sequential execution — one agent at a time
-- Manual stage advancement via `gate.sh advance <signal>`
+- Agent definitions in `.claude/agents/*.md`
+- Rules in `.claude/rules/*.md` (path-scoped)
+- Skills in `.claude/skills/*/SKILL.md`
 
-## Level 3: Direct (no daemon, no multiplexer)
+## Level 2: Direct (any AI tool)
 
 Bare minimum. Human drives workflow manually.
 
@@ -32,32 +25,20 @@ Bare minimum. Human drives workflow manually.
 ## Decision Tree
 
 ```
-Is kiro-sessiond running?
-  YES → Level 1 (Full)
-  NO  → Is Zellij/multiplexer available?
-    YES → Level 2 (Single-Agent)
-    NO  → Level 3 (Direct)
+Is Claude Code available?
+  YES → Level 1 (Claude Code Native)
+  NO  → Level 2 (Direct — any AI tool reads AGENTS.md)
 ```
 
-## Commands by Level
+## Commands
 
-| Command | L1 | L2 | L3 |
-|---------|----|----|-----|
-| `gate.sh init <feature>` | daemon | manual | manual |
-| `gate.sh advance <signal>` | daemon | manual | manual |
-| `gate.sh status` | ✓ | ✓ | ✓ |
-| `gate.sh check <stage>` | ✓ | ✓ | ✓ |
-| `lefthook run pre-commit` | auto | auto | manual |
-
-## Signals Reference
-
-| Signal | Transition |
-|--------|-----------|
-| `plan_ready` | plan → test |
-| `tests_ready` | test → sprint |
-| `sprint_complete` | sprint → review |
-| `review_complete` | review → done |
-| `stage_failed` | any → failed |
-| `retry_plan` | failed → plan |
-| `retry_test` | failed → test |
-| `retry_sprint` | failed → sprint |
+| Command | L1 | L2 |
+|---------|----|----|
+| `gate.sh init <feature>` | ✓ | ✓ |
+| `gate.sh advance <signal>` | ✓ | ✓ |
+| `gate.sh status` | ✓ | ✓ |
+| `gate.sh check <stage>` | ✓ | ✓ |
+| `lefthook run pre-commit` | auto | manual |
+| `Agent()` subagent dispatch | ✓ | — |
+| `/trio` skill | ✓ | — |
+| `/grill` skill | ✓ | — |

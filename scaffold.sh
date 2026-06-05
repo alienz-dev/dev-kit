@@ -152,28 +152,13 @@ open → specced → tests_written → red_verified → implementing → green �
 EOF
 
 cat > .agents/constitution.yml << EOF
-forward_transitions:
-  - from: open
-    to: specced
-    gate: spec_linked
-  - from: specced
-    to: tests_written
-    gate: tests_exist
-  - from: tests_written
-    to: red_verified
-    gate: all_tests_fail
-  - from: red_verified
-    to: implementing
-    gate: coder_assigned
-  - from: implementing
-    to: green
-    gate: visible_tests_pass
-  - from: green
-    to: reviewing
-    gate: reviewer_assigned
-  - from: reviewing
-    to: closed
-    gate: approved_and_hidden_pass
+# constitution.yml — project-level pipeline config
+# State definitions are in transitions.json (single source of truth).
+# See .pipeline/transitions.json for stage definitions and gate checks.
+constraints:
+  max_coder_parallel: 3
+  max_green_retries: 3
+  max_visual_retries: 2
 EOF
 
 cat > .agents/agents.yml << EOF
@@ -181,8 +166,7 @@ project:
   name: $NAME
   repo: $PROJECT_DIR
 runtime:
-  agent_cli: kiro
-  multiplexer: zellij
+  agent_cli: claude
 agents:
   - id: supervisor
     tools: [fs_read, glob, grep, execute_bash]
@@ -299,7 +283,130 @@ fi # end MINIMAL check for specs/tools/NEXT-SESSION/DECISIONS
 
 # --- AGENTS.md (cross-tool instructions) ---
 sed "s/{{PROJECT_NAME}}/$NAME/g" "$SCRIPT_DIR/templates/common/AGENTS.md.template" > AGENTS.md
-ln -sf AGENTS.md CLAUDE.md
+
+# --- CLAUDE.md (lean, <80 lines, uses @ imports) ---
+cat > CLAUDE.md << EOF
+# $NAME
+
+## Commands
+- Install: \`npm install\`
+- Build: \`npm run build\`
+- Typecheck: \`npm run typecheck\`
+- Test all: \`npm test\`
+- Test single: \`npx vitest run tests/<path>\`
+
+## Workflow
+Spec-driven TDD with TRIO protocol. Read @AGENTS.md for full details.
+
+## Rules
+@.claude/rules/safety.md
+@.claude/rules/code-style.md
+@.claude/rules/testing.md
+
+## Agents
+Custom agents in .claude/agents/: coder, reviewer, test-manager, researcher, explorer
+
+## Boundaries
+- src/ and tests/ — writable
+- specs/, .agents/, .pipeline/ — read-only for agents
+- Never pool:forks in vitest, never raw tsc --noEmit
+EOF
+
+# --- .claude/ directory structure ---
+mkdir -p .claude/{agents,rules,skills,hooks}
+
+# --- .claude/hooks/ ---
+cp "$SCRIPT_DIR/templates/common/claude-code/hooks/block-dangerous.sh" .claude/hooks/block-dangerous.sh
+cp "$SCRIPT_DIR/templates/common/claude-code/hooks/verify-tests.sh" .claude/hooks/verify-tests.sh
+cp "$SCRIPT_DIR/templates/common/claude-code/hooks/check-briefing.sh" .claude/hooks/check-briefing.sh
+chmod +x .claude/hooks/block-dangerous.sh .claude/hooks/verify-tests.sh .claude/hooks/check-briefing.sh
+
+# --- .claude/settings.json ---
+cat > .claude/settings.json << EOF
+{
+  "permissions": {
+    "allow": ["Read", "Write", "Edit", "Bash(npm run *)", "Bash(npm test*)", "Bash(git *)", "Bash(npx vitest *)"],
+    "deny": ["Bash(rm -rf *)", "Bash(git push --force *)"]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/block-dangerous.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Agent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/check-briefing.sh"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/verify-tests.sh"
+          },
+          {
+            "type": "command",
+            "command": "afplay /System/Library/Sounds/Glass.aiff >/dev/null 2>&1 || true"
+          }
+        ]
+      }
+    ]
+  }
+}
+EOF
+
+# --- .claude/agents/ ---
+if [ -d "$SCRIPT_DIR/templates/common/claude-code/agents" ]; then
+  cp "$SCRIPT_DIR/templates/common/claude-code/agents/"*.md .claude/agents/ 2>/dev/null || true
+fi
+
+# --- .claude/rules/ ---
+if [ -d "$SCRIPT_DIR/templates/common/claude-code/rules" ]; then
+  cp "$SCRIPT_DIR/templates/common/claude-code/rules/"*.md .claude/rules/ 2>/dev/null || true
+fi
+
+# --- Copy consolidated governance rules ---
+if [ -f "$SCRIPT_DIR/agents/rules/CONSOLIDATED.md" ]; then
+  cp "$SCRIPT_DIR/agents/rules/CONSOLIDATED.md" .claude/rules/CONSOLIDATED.md
+fi
+
+# --- Copy skills ---
+if [ -d "$SCRIPT_DIR/agents/skills" ]; then
+  cp "$SCRIPT_DIR/agents/skills/"*.md .claude/skills/ 2>/dev/null || true
+fi
+
+# --- .claude/skills/ ---
+if [ -d "$SCRIPT_DIR/templates/common/claude-code/skills" ]; then
+  cp -r "$SCRIPT_DIR/templates/common/claude-code/skills/"* .claude/skills/ 2>/dev/null || true
+fi
+
+# --- CLAUDE.local.md (personal overrides, gitignored) ---
+cat > CLAUDE.local.md << EOF
+# $NAME — Local Overrides (gitignored)
+
+## Personal preferences
+# Add your personal Claude Code preferences here
+
+## MCP Servers
+# Add project-specific MCP servers in .mcp.json
+EOF
+
+# Add to gitignore
+echo "CLAUDE.local.md" >> .gitignore
+echo ".claude/settings.local.json" >> .gitignore
 
 # --- Lefthook (pre-commit gate) ---
 if [ -f "$SCRIPT_DIR/templates/common/lefthook.yml" ]; then
@@ -310,30 +417,7 @@ fi
 mkdir -p .pipeline
 cp "$SCRIPT_DIR/workflow/pipeline/transitions.json" .pipeline/transitions.json
 
-# --- Kiro agent JSON ---
-if [ "$MINIMAL" -eq 0 ]; then
-mkdir -p ~/.kiro/agents
-
-cat > ~/.kiro/agents/${NAME}.json << EOF
-{
-  "name": "$NAME",
-  "description": "$NAME project supervisor",
-  "model": "claude-sonnet-4-20250514",
-  "prompt": "You are the $NAME project supervisor at $PROJECT_DIR.\n\nOn session start:\n1. Read: STATUS.md, NEXT-SESSION.md, CONTEXT.md\n2. Read: .agents/knowledge/workflow.md\n3. Run: npm run typecheck\n4. Present state and ask for direction\n\nYou orchestrate and delegate. You do NOT write source code.\nDelegate to spawned workers (coder, tester, reviewer).\n\nFollow spec-driven TDD:\n- Write spec → spawn test-manager → verify RED → spawn coder → verify GREEN → spawn reviewer → close\n\nAvailable skills:\n- grill <topic>: Design tree interview before planning (read .tools/GRILL.md)\n- TRIO protocol: Test→Red→Implement→Observe (read .tools/TRIO.md)\n- explainer: Generate visual HTML presentations",
-  "toolsSettings": {
-    "write": {
-      "deniedPaths": ["**/src/**", "**/tests/**", "**/*.ts", "**/*.tsx", "**/*.js"]
-    }
-  },
-  "tools": ["fs_read", "fs_write", "grep", "execute_bash", "glob"],
-  "allowedTools": ["fs_read", "fs_write", "grep", "execute_bash", "glob"],
-  "resources": [
-    "file://$PROJECT_DIR/.agents/knowledge/workflow.md",
-    "file://$PROJECT_DIR/.agents/knowledge/project.md"
-  ]
-}
-EOF
-fi # end MINIMAL check for kiro agent JSON
+# --- Install deps ---
 
 # --- Install deps ---
 echo ""
@@ -348,9 +432,11 @@ echo ""
 echo "=== Done ==="
 echo ""
 echo "Project created at: $PROJECT_DIR"
-echo "Agent config at: ~/.kiro/agents/${NAME}.json"
 echo ""
 echo "Next steps:"
 echo "  cd $PROJECT_DIR"
-echo "  zellij --session $NAME"
-echo "  kiro-cli chat --agent $NAME"
+if command -v claude &>/dev/null; then
+  echo "  claude"
+else
+  echo "  (install claude to start)"
+fi

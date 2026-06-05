@@ -7,7 +7,7 @@ description: Planner-specific rules. Read-only constraint, search, discovery sco
 
 ## Read-Only Constraint
 
-Write to `/tmp/` and `~/plans/` only. Do not modify `~/vault/`, `~/scripts/`, `~/.kiro/`, or any repo.
+Write to `/tmp/` and `~/plans/` only. Do not modify agent infrastructure or any repo.
 
 **Exception — simple inline fixes (interactive mode only):** Describe change, ask confirmation, make edit. Bump `last-updated` if vault file.
 
@@ -19,13 +19,11 @@ Write to `/tmp/` and `~/plans/` only. Do not modify `~/vault/`, `~/scripts/`, `~
 
 ## Search Protocol
 
-1. KG semantic: `cd ~/work-enhancement/knowledge-graph && NODE_TLS_REJECT_UNAUTHORIZED=0 KG_VAULT_PATH=~/vault npx tsx src/cli/index.ts search "<query>" 2>/dev/null < /dev/null`
-2. KG structural: `... paths "<nodeA>" "<nodeB>"`, `neighbors "<node>" --depth 2`, `common "<A>" "<B>"`
-3. KG full-text: `... search "<exact term>" --fulltext 2>/dev/null < /dev/null`
-4. Session history: `python3 ~/scripts/conversation-search.py --keyword "<query>" --days 14 --top 5 < /dev/null`
-5. Skill routing: `grep -i "<keyword>" ~/vault/skills/index.md | head -5`
+1. Project codebase: `grep -r "<query>" src/ --include="*.ts" -l | head -5`
+2. Project docs: `grep -r "<query>" docs/ specs/ -l | head -5`
+3. Project tests: `grep -r "<query>" tests/ --include="*.test.ts" -l | head -5`
 
-Read top results with `read`. Fallback to `grep`/`glob` only if KG/search returns nothing.
+Read top results with `read`. Fallback to `grep`/`glob` for broader searches.
 
 ## Solution Discovery Gate
 
@@ -33,7 +31,7 @@ Score task complexity (0-10). Five signals × 0-2: approach clarity, precedent, 
 
 - **0-3**: Plan directly.
 - **4-5**: Light discovery — Phase 1 (research) + Phase 2 (candidate eval). No POC.
-- **6-10**: Spawn Researcher — `kiro-ctl spawn researcher "Research: <problem>. Write verdict to ~/plans/research-<topic>-verdict.md" --subscribe --workdir <repo>`
+- **6-10**: Spawn Researcher — dispatch with research task, write verdict to `~/plans/research-<topic>-verdict.md`
 
 ## Three-Phase Pipeline
 
@@ -99,12 +97,19 @@ Banned: "should", "appropriate", "properly", "correctly" — rewrite with concre
 ### Wave Execution
 1. Write plan to `~/plans/plan-<topic>.md`
 2. Self-review (quality gate above)
-3. Per wave:
-   a. Write briefing to `/tmp/ctx-<topic>-<agent>.md` — inline all context
-   b. Spawn: `kiro-ctl spawn coder "<desc>. Write result to /tmp/<id>-result.md" --subscribe --context /tmp/ctx-<topic>-<agent>.md --workdir <repo>`
-   c. Report spawned IDs
-4. Between waves: read results, run verification, adjust next wave
-5. Repeat until done
+3. **Analyze dependencies** — group specs/tasks into waves where wave N tasks are independent and wave N+1 depends on wave N
+4. **Grill specs** — use `agents/rules/grill-checklist.md`, ask 3-5 questions per spec, update clarifications
+5. Per wave (max 3 agents per wave):
+   a. **Write test scripts first** — verification scripts that implementers must make pass
+   b. Write briefing using `agents/rules/implementation-briefing.md` template — NO spec text, only test scripts + file lists
+   c. Spawn implementers with briefing context file
+   d. Report spawned IDs
+6. **Verify wave** — run all test scripts, run adversarial reviewer (`agents/rules/adversarial-reviewer.md`)
+7. **Retro between waves** — 2-minute mini-retro: what worked, what broke, what to change, go/no-go
+8. Repeat until done
+9. **Final retro** — use retro protocol below, capture lessons
+
+Full wave protocol: `agents/rules/wave-execution.md`
 
 ### Briefing Rules
 - **Inline context** — actual code, file paths, instructions. Not "read file X"
@@ -117,7 +122,7 @@ Banned: "should", "appropriate", "properly", "correctly" — rewrite with concre
 - **Tests-as-contract** — `## Tests (Contract)` with failing tests, `## Test Map`. NO spec text in coder briefings.
 - **Non-Goals → `## Do NOT`** in coder briefings
 - **Invariants → `## Invariant Targets (Hidden Tests)`** in test-manager briefings
-- **Heuristic retrieval** — `krew heuristic query "<task>"` before writing briefing
+- **Heuristic retrieval** — check past patterns before writing briefing
 
 ### Post-Handoff Review
 - **Tier 1** (inline): complexity ≤3, config/docs only, <50 lines → read result, sanity check
@@ -128,20 +133,7 @@ Banned: "should", "appropriate", "properly", "correctly" — rewrite with concre
 
 | Code | Action |
 |---|---|
-| `res` | `python3 ~/scripts/conversation-anchor.py --list` |
-| `res <kw>` | `python3 ~/scripts/conversation-anchor.py --resume <kw>` |
-| `anchore` | `python3 ~/scripts/conversation-anchor.py --save` |
-| `hs` | StudentHS crew session |
-| `krew` | krew-cli project session |
-| `krew wd` | `cd ~/projects/watchdog && krew session start watchdog-dev` |
-| `krew kh` | `cd ~/projects/knowledge-hub && krew session start kh` |
-| `watchdog` | `cd ~/workspaces/watchdog && krew session start` |
-| `sprint` | `cd ~/workspaces/sprint && krew session start` |
-| `krew ar` | `cd ~/workspaces/auto-research && krew session start auto-research` |
 | `retro` | Run retro protocol below |
-| `retro <sprint>` | `krew heuristic list --sprint "<sprint>"` |
-| `retro query <desc>` | `krew heuristic query "<desc>"` |
-| `tutor` | Load `~/plans/plan-ai-tutor-learning-session.md` |
 | `grill <topic>` | Execute grill protocol below |
 
 Execute shortcodes immediately — don't treat arguments as research topics.
@@ -149,24 +141,41 @@ Shortcode respects crew mode: if `mode: auto` in config, skip menus and spawn im
 
 ## Retro Protocol
 
+### Mini-Retro (Between Waves — 2 minutes)
+After each wave is verified:
+1. What worked in this wave?
+2. What broke or caused rework?
+3. What should change in the next wave?
+4. Go/No-Go for next wave?
+
+### Full Retro (At Session End)
 When `retro` invoked or at session end:
 
 1. **Summarize** — what worked, what went wrong, metrics
 2. **Extract candidates** — name each pattern concisely
 3. **Classify:**
-   - Heuristic (agent behavior fix) → `krew heuristic add --title "..." --trigger "..." --action "..." --rationale "..." --scope <scope> --type failure --sprint <sprint>`
+   - Heuristic (agent behavior fix) → record in project knowledge
    - Issue (code/tooling bug) → `issue open "..." --project <slug> --type bug --severity P2`
    - Drop (too generic, one-off, already known)
 4. **Present & confirm** — show table, execute on approval
 
 Classify before storing. Bugs → issue tracker, not heuristic DB.
 
+### Retro Template
+```markdown
+## Wave N Retro
+- What worked: <list>
+- What broke: <list>
+- What to change: <list>
+- Go/No-Go: <decision + rationale>
+```
+
 ## Auto-Mode Protocol
 
 When user types `auto` after plan approval:
 
 ### Tier Classification
-1. **Infra** — touches `~/infra/`, `~/scripts/`, `~/.kiro/agents/`, daemon/systemd. POC-first. Max 2 fix cycles.
+1. **Infra** — touches agent infrastructure, daemon/systemd. POC-first. Max 2 fix cycles.
 2. **Normal** — app source, tests, components. Max 3 fix cycles.
 3. **Trivial** — docs, config tweaks, typos. Max 1 fix cycle.
 
@@ -174,10 +183,8 @@ Priority: infra > normal > trivial. Default: normal.
 
 ### Dispatch
 1. Classify tier
-2. Load template from `~/vault/skills/auto-mode/{tier}.md`
-3. Fill `{{slots}}` with task values
-4. Write to `/tmp/ctx-auto-mode-<task_id>.md`
-5. Spawn: `kiro-ctl spawn coder "<summary>. Write result to /tmp/auto-mode-<task_id>-result.md" --subscribe --context /tmp/ctx-auto-mode-<task_id>.md --workdir <repo>`
+2. Write briefing to `/tmp/ctx-auto-mode-<task_id>.md`
+3. Spawn coder with briefing context
 
 Completion is daemon-driven (`--subscribe`). Never poll.
 
@@ -198,28 +205,33 @@ Session ends when all branches resolved or user says "done"/"plan it". Present d
 
 ## Issue Filing
 
+Uses `issue` CLI (from tools/issue-cli, requires Node 22):
+
 ```bash
-issue open "title" --project <slug> --type <type> --severity <sev>
+issue open "title" --project dev-kit --type bug --severity P1
 issue quick "title"                    # auto-detect from git remote
-issue resolve <ref> --resolution "what was fixed"
-issue list --project <slug> --state open
+issue resolve dev-kit#N --resolution "what was fixed"
+issue list --project dev-kit --state open
 issue triage
-issue auto-file "title" --trigger <type> --evidence "text" --project <slug>
+issue brief dev-kit#N                  # agent-readable briefing
+issue learn dev-kit#N                  # extract gotcha from resolved issue
 ```
 
-Projects: vault, kiro, infra, krew-cli, krew, watchdog, taxintell, secgate, studenths, knowledge-hub, neo-ui, general, kiro-sessiond, issue-tracker
+Types: bug, task, enhancement, feature, blocked, gotcha
+Severities: P0 (critical), P1 (high), P2 (medium), P3 (low), P4 (cosmetic)
+
+For retro findings: `issue open "title" --project dev-kit --type <type> --tags "retro"`
 
 ## Done Protocol
 
 When user signals "done":
 1. If project has STATUS.md/NEXT-SESSION.md → update them
-2. Write `~/.kiro/state/<workspace>.md` (workspace state)
-3. If bug fix → append to `~/vault/knowledge/debug-log/debug-log.md`
-4. If behavior changed → update vault docs (grep for script/service name)
+2. Write workspace state
+3. If bug fix → append to project debug log
+4. If behavior changed → update project docs
 5. Memory update: gotcha → `hot-memory.sh add`; state change → `hot-memory.sh replace`
 6. Self-close if coupled spawn (result path + parent pane)
 
 ## On-Demand (read full file when triggered)
-- Endgame protocol → `~/.kiro/skills/planner-rules/SKILL.md` §Endgame Protocol
-- Interaction Design Gate → `~/.kiro/skills/planner-rules/SKILL.md` §Interaction Design Gate
-- Full skill routing → `~/vault/skills/index.md`
+- Endgame protocol → `.claude/skills/planner-rules/SKILL.md` §Endgame Protocol
+- Interaction Design Gate → `.claude/skills/planner-rules/SKILL.md` §Interaction Design Gate

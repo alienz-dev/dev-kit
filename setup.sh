@@ -14,13 +14,14 @@ for arg in "$@"; do
 done
 
 # Auto-detect agent session — skip confirmations
-if [ -n "${KIRO_SESSION:-}" ] || [ -n "${CLAUDE_CODE:-}" ] || [ -n "${CODEX_SANDBOX:-}" ] || [ -n "${AI_AGENT:-}" ]; then
+if [ -n "${CLAUDE_CODE:-}" ] || [ -n "${CODEX_SANDBOX:-}" ] || [ -n "${AI_AGENT:-}" ]; then
   [ "$MODE" = "full" ] && MODE="ci"
 fi
 
 echo "=== dev-kit setup (mode: $MODE) ==="
 echo "Detecting environment..."
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 OS="$(uname -s)"
 ARCH="$(uname -m)"
 
@@ -39,9 +40,18 @@ MISSING=0
 echo ""
 echo "=== Checking prerequisites ==="
 
-if command -v git &>/dev/null; then ok "git $(git --version | cut -d' ' -f3)"; else fail "git not found"; MISSING=1; need "sudo apt install git"; fi
-if command -v curl &>/dev/null; then ok "curl"; else fail "curl not found"; MISSING=1; need "sudo apt install curl"; fi
-if command -v jq &>/dev/null; then ok "jq $(jq --version 2>/dev/null)"; else fail "jq not found"; MISSING=1; need "sudo apt install jq"; fi
+# Detect package manager for install hints
+if [ "$OS" = "Darwin" ] && command -v brew &>/dev/null; then
+  PKG_MGR="brew install"
+elif command -v apt &>/dev/null; then
+  PKG_MGR="sudo apt install"
+else
+  PKG_MGR="install"
+fi
+
+if command -v git &>/dev/null; then ok "git $(git --version | cut -d' ' -f3)"; else fail "git not found"; MISSING=1; need "$PKG_MGR git"; fi
+if command -v curl &>/dev/null; then ok "curl"; else fail "curl not found"; MISSING=1; need "$PKG_MGR curl"; fi
+if command -v jq &>/dev/null; then ok "jq $(jq --version 2>/dev/null)"; else fail "jq not found"; MISSING=1; need "$PKG_MGR jq"; fi
 
 # --- Node.js via nvm ---
 echo ""
@@ -52,18 +62,24 @@ if [ -s "$NVM_DIR/nvm.sh" ]; then
   source "$NVM_DIR/nvm.sh"
 fi
 
-if command -v node &>/dev/null && node --version | grep -q "v22"; then
+if command -v node &>/dev/null && node --version | grep -q "v2"; then
   ok "Node $(node --version)"
 else
-  echo "Installing nvm + Node 22..."
-  if [ ! -s "$NVM_DIR/nvm.sh" ]; then
+  echo "Installing Node 22..."
+  if [ "$OS" = "Darwin" ] && command -v brew &>/dev/null; then
+    brew install node@22 && ok "Node $(node --version) installed via brew"
+  elif [ ! -s "$NVM_DIR/nvm.sh" ]; then
     curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
     export NVM_DIR="$HOME/.nvm"
     source "$NVM_DIR/nvm.sh"
+    nvm install 22
+    nvm alias default 22
+    ok "Node $(node --version) installed via nvm"
+  else
+    nvm install 22
+    nvm alias default 22
+    ok "Node $(node --version) installed via nvm"
   fi
-  nvm install 22
-  nvm alias default 22
-  ok "Node $(node --version) installed"
 fi
 
 # --- Python ---
@@ -76,47 +92,29 @@ if command -v python3 &>/dev/null; then
 else
   fail "Python 3 not found"
   MISSING=1
-  need "sudo apt install python3 python3-pip python3-venv"
-fi
-
-# --- Zellij ---
-if [ "$MODE" != "minimal" ]; then
-echo ""
-echo "=== Zellij ==="
-
-if command -v zellij &>/dev/null; then
-  ok "Zellij $(zellij --version 2>/dev/null | head -1)"
-elif [ "$MODE" = "check" ]; then
-  fail "zellij not found"; MISSING=1
-else
-  echo "Installing zellij..."
-  mkdir -p ~/.local/bin
-  if [ "$ARCH" = "x86_64" ]; then
-    curl -sL https://github.com/zellij-org/zellij/releases/latest/download/zellij-x86_64-unknown-linux-musl.tar.gz | tar xz -C ~/.local/bin/
-  elif [ "$ARCH" = "aarch64" ]; then
-    curl -sL https://github.com/zellij-org/zellij/releases/latest/download/zellij-aarch64-unknown-linux-musl.tar.gz | tar xz -C ~/.local/bin/
+  if [ "$OS" = "Darwin" ]; then
+    need "$PKG_MGR python@3.12"
   else
-    fail "Unsupported arch: $ARCH — install zellij manually"
-    MISSING=1
+    need "$PKG_MGR python3 python3-pip python3-venv"
   fi
-  if command -v zellij &>/dev/null; then ok "Zellij installed"; fi
 fi
-fi # end MODE != minimal
 
-# --- Kiro CLI ---
+# --- Coding Agent ---
 if [ "$MODE" != "minimal" ]; then
 echo ""
-echo "=== Coding Agent (kiro-cli) ==="
+echo "=== Coding Agent ==="
 
-if command -v kiro-cli &>/dev/null; then
-  ok "kiro-cli installed"
+AGENT_CLI=""
+if command -v claude &>/dev/null; then
+  ok "Claude Code installed"
+  AGENT_CLI="claude"
 elif [ "$MODE" = "check" ]; then
-  fail "kiro-cli not found"; MISSING=1
+  fail "No coding agent found (claude)"; MISSING=1
 else
-  echo "Installing kiro-cli..."
-  npm install -g @anthropic/kiro-cli 2>/dev/null && ok "kiro-cli installed" || {
-    fail "kiro-cli install failed (may need auth or registry config)"
-    need "npm install -g @anthropic/kiro-cli"
+  echo "Installing Claude Code..."
+  npm install -g @anthropic/claude-code 2>/dev/null && ok "Claude Code installed" && AGENT_CLI="claude" || {
+    fail "No coding agent installed — install manually:"
+    need "npm install -g @anthropic/claude-code"
     MISSING=1
   }
 fi
@@ -127,38 +125,13 @@ echo ""
 echo "=== Directory structure ==="
 
 mkdir -p ~/projects ~/plans ~/.local/bin
-if [ "$MODE" != "minimal" ]; then
-  mkdir -p ~/.kiro/{agents,rules,state,skills,hooks}
-  mkdir -p ~/.config/zellij/{layouts,plugins}
-fi
 ok "Directories created"
-
-# --- Zellij config ---
-if [ "$MODE" != "minimal" ]; then
-echo ""
-echo "=== Zellij configuration ==="
-
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
-if [ ! -f ~/.config/zellij/config.kdl ] || [ "${FORCE:-}" = "1" ]; then
-  cp "$SCRIPT_DIR/core/multiplexer/config.kdl" ~/.config/zellij/config.kdl
-  cp "$SCRIPT_DIR/core/multiplexer/layouts/default.kdl" ~/.config/zellij/layouts/default.kdl
-  ok "Zellij config installed"
-else
-  ok "Zellij config exists (use FORCE=1 to overwrite)"
-fi
 
 # --- Agent rules ---
 echo ""
 echo "=== Agent rules ==="
 
-if [ ! -f ~/.kiro/rules/client_rules.md ] || [ "${FORCE:-}" = "1" ]; then
-  cp "$SCRIPT_DIR/agents/rules/SAFETY.md" ~/.kiro/rules/client_rules.md
-  ok "Safety rules installed"
-else
-  ok "Rules exist (use FORCE=1 to overwrite)"
-fi
-fi # end MODE != minimal
+ok "Safety rules available in agents/rules/SAFETY.md"
 
 # --- PATH ---
 echo ""
@@ -167,12 +140,37 @@ echo "=== PATH ==="
 if echo "$PATH" | grep -q "$HOME/.local/bin"; then
   ok "~/.local/bin in PATH"
 else
-  echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
-  ok "Added ~/.local/bin to PATH (source ~/.bashrc to activate)"
+  # Detect shell rc file
+  SHELL_RC="$HOME/.bashrc"
+  if [ "${SHELL:-}" = "/bin/zsh" ] || [ "${SHELL:-}" = "/usr/bin/zsh" ]; then
+    SHELL_RC="$HOME/.zshrc"
+  fi
+  echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$SHELL_RC"
+  ok "Added ~/.local/bin to PATH (source $SHELL_RC to activate)"
+fi
+
+# --- Submodules ---
+if [ "$MODE" != "minimal" ]; then
+echo ""
+echo "=== Submodules ==="
+
+if [ -f "$SCRIPT_DIR/.gitmodules" ]; then
+  # Auto-init submodules if not yet populated
+  UNINITED=$(git -C "$SCRIPT_DIR" submodule status 2>/dev/null | grep '^-' | wc -l | tr -d ' ')
+  if [ "$UNINITED" -gt 0 ]; then
+    echo "  Initializing $UNINITED submodule(s)..."
+    git -C "$SCRIPT_DIR" submodule update --init 2>/dev/null && ok "Submodules initialized" || {
+      fail "Submodule init failed (Bitbucket access required)"
+      need "git submodule update --init"
+    }
+  else
+    ok "Submodules up to date"
+  fi
+else
+  ok "No submodules defined"
 fi
 
 # --- Issue CLI ---
-if [ "$MODE" != "minimal" ]; then
 echo ""
 echo "=== Issue CLI ==="
 
@@ -185,7 +183,7 @@ if [ -d "$SCRIPT_DIR/tools/issue-cli" ] && [ -f "$SCRIPT_DIR/tools/issue-cli/pac
   }
   cd "$SCRIPT_DIR"
 else
-  echo "  (issue-cli submodule not initialized — run: git submodule update --init)"
+  echo "  (issue-cli not available — submodule may need Bitbucket access)"
 fi
 fi # end MODE != minimal
 
@@ -211,8 +209,11 @@ if [ $MISSING -eq 0 ]; then
   else
     echo "Next steps:"
     echo "  1. Create your first project: ./scaffold.sh <project-name>"
-    echo "  2. Start a session: zellij --session <project-name>"
-    echo "  3. Launch agent: kiro-cli chat --agent <project-name>"
+    if [ "${AGENT_CLI:-}" = "claude" ]; then
+      echo "  2. cd <project-dir> && claude"
+    else
+      echo "  2. Install claude and start"
+    fi
   fi
 else
   fail "Some prerequisites missing — see above"

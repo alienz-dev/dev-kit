@@ -105,6 +105,24 @@ project/
     └── ...
 ```
 
+## Mapping to Pipeline Stages
+
+Issue states map to the pipeline stages defined in
+[`transitions.json`](../pipeline/transitions.json) (single source of truth):
+
+| Issue State | Pipeline Stage | Notes |
+|-------------|---------------|-------|
+| backlog | (pre-pipeline) | Not yet in pipeline |
+| planned | plan | Spec being written |
+| open | plan | Spec exists, awaiting test phase |
+| in_progress | sprint | Implementation in progress |
+| review | review | Under review |
+| resolved | done | Implementation complete |
+| verified | done | Post-merge verification complete |
+| closed | done | Issue closed |
+| wontfix | done | Closed without implementation |
+| blocked | (stalls current stage) | Remains at current pipeline stage until unblocked |
+
 ## Integration with TRIO
 
 Issues link to specs and tests:
@@ -114,4 +132,4 @@ linked_tests: [tests/unit/pagination.test.ts]
 linked_files: [src/routes/users.ts]
 ```
 
-The constitution gates reference issue status — advancing an issue requires passing the corresponding gate.
+Advancing an issue requires passing the corresponding gate defined in `transitions.json`.

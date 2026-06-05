@@ -23,21 +23,21 @@ This prevents "implement to spec" shortcuts where the coder reads the spec and w
 | Sprint-Manager | Dispatches coders, runs all gates, spawns reviewer | coder ×N, reviewer-lite, reviewer |
 | Coder | Makes tests pass | — |
 
-**Critical:** Test-manager does NOT spawn coders. Sprint-manager does NOT write tests. This separation is daemon-enforced via role_policies.
+**Critical:** Test-manager does NOT spawn coders. Sprint-manager does NOT write tests. This separation is structurally enforced by agent role definitions (prompt-enforced).
 
-## Pipeline Stages (Daemon-Enforced)
+## Pipeline Stages
 
-```
-plan → test → sprint → review → done | failed
-```
+The pipeline stages and their transitions are defined in
+[`transitions.json`](../pipeline/transitions.json) (single source of truth).
+
+Top-level stages: `plan → test → sprint → review → done | failed`
 
 Signals: `plan_ready` → `tests_ready` → `sprint_complete` → `review_complete`
 
-## State Machine
+## TRIO Sub-Gates (within sprint stage)
 
-```
-open → specced → tests_written → red_verified → implementing → green → reviewing → closed
-```
+The sprint stage contains sub-gates defined in the `gates.sprint` object of
+`transitions.json`. See the [Gates](#gates) table below for the full sequence.
 
 ## Gates
 
@@ -58,7 +58,7 @@ open → specced → tests_written → red_verified → implementing → green �
 ### Gate Sequence Per Wave
 
 ```
-trio-preflight.sh → [coder dispatch] → GREEN → wiring → visual → wave-smoke.sh
+trio-preflight.sh → [coder dispatch] → GREEN → wiring → visual → quality/gates/wave-smoke.sh
 ```
 
 After all waves complete:
@@ -71,7 +71,7 @@ hidden → activation → review
 After GREEN, if the changeset includes UI files (.tsx, .jsx, .vue, .svelte, .css, .scss, .html, .ejs, .hbs):
 
 ```bash
-ui-visual-check.sh --gate --baseline <project>/screenshots/baselines \
+quality/gates/ui-visual-check.sh --gate --baseline <project>/screenshots/baselines \
   --url <dev-server-url> --files <changed> --design DESIGN.md
 ```
 
@@ -102,7 +102,7 @@ ui-visual-check.sh --gate --baseline <project>/screenshots/baselines \
 - Creates issues, writes specs
 - Spawns test-manager and sprint-manager
 - Never writes source code
-- Never spawns coders directly (daemon-enforced)
+- Never spawns coders directly (structurally enforced by agent role definition)
 
 ### Test-Manager (persistent, owns RED)
 - Writes test files from spec (visible + hidden)
@@ -131,59 +131,9 @@ ui-visual-check.sh --gate --baseline <project>/screenshots/baselines \
 
 ## Constitution File
 
-```yaml
-# constitution.yml — placed in project root
-forward_transitions:
-  - from: open
-    to: specced
-    gate: spec_linked
-  - from: specced
-    to: tests_written
-    gate: tests_exist
-  - from: tests_written
-    to: red_verified
-    gate: all_tests_fail
-  - from: red_verified
-    to: implementing
-    gate: sprint_manager_dispatched
-  - from: implementing
-    to: green
-    gate: visible_tests_pass
-  - from: green
-    to: wiring_verified
-    gate: entry_reachability_pass
-  - from: wiring_verified
-    to: visual_verified
-    gate: ui_visual_check_pass
-    condition: changeset_includes_ui_files
-  - from: visual_verified
-    to: hidden_verified
-    gate: hidden_tests_pass
-  - from: hidden_verified
-    to: activation_verified
-    gate: activation_gate_pass
-  - from: activation_verified
-    to: reviewing
-    gate: reviewer_assigned
-  - from: reviewing
-    to: closed
-    gate: approved
-
-backward_transitions:
-  - from: reviewing
-    to: specced
-    gate: reason_required
-    unfreezes_spec: true
-  - from: reviewing
-    to: red_verified
-    gate: new_tests_fail
-  - from: green
-    to: implementing
-    gate: hidden_promoted
-  - from: implementing
-    to: tests_written
-    gate: reason_required
-```
+Gate transitions are defined in [`transitions.json`](../pipeline/transitions.json).
+The constitution file (if present in a project) should reference that file rather than
+duplicating state definitions.
 
 ## Hidden Tests
 
@@ -200,11 +150,11 @@ Hidden tests run at the hidden gate (after all waves complete). If they fail:
 
 1. **Supervisor** creates issue `PROJ-042: Add pagination to /users`
 2. **Supervisor** writes `specs/pagination.spec.md` → issue status: `specced`
-3. **Supervisor** spawns test-manager: `kiro-ctl spawn test-manager "Own RED gate for PROJ-042" --topic`
+3. **Supervisor** spawns test-manager: `Agent(test-manager: "Own RED gate for PROJ-042")`
 4. **Test-manager** reads spec, writes `tests/unit/pagination.test.ts` → status: `tests_written`
 5. **Test-manager** runs tests, confirms all fail → status: `red_verified`, signals `tests_ready`
-6. **Supervisor** spawns sprint-manager: `kiro-ctl spawn sprint-manager "GREEN→REVIEW for PROJ-042" --subscribe`
-7. **Sprint-manager** dispatches coder: `kiro-ctl spawn coder "Make these tests pass" --subscribe`
+6. **Supervisor** spawns sprint-manager: `Agent(sprint-manager: "GREEN→REVIEW for PROJ-042")`
+7. **Sprint-manager** dispatches coder: `Agent(coder: "Make these tests pass")`
 8. **Coder** reads tests, implements `src/routes/users.ts`, writes result, self-closes
 9. **Sprint-manager** runs GREEN gate → pass → wiring gate → pass → visual gate → pass
 10. **Sprint-manager** runs hidden gate → pass → activation gate → pass
@@ -227,7 +177,7 @@ Hidden tests run at the hidden gate (after all waves complete). If they fail:
 Production observation: agents skip gates unless explicitly mandated in their prompts.
 
 ### Fix Applied
-- Daemon role_policies: `planner→coder = NEVER`, `sprint-manager→coder = ALWAYS`
+- Agent role definitions enforce spawn policies: `planner→coder = NEVER`, `sprint-manager→coder = ALWAYS`
 - Sprint-manager prompt: "Mandatory Gate Sequence (DO NOT SKIP)" with explicit exit-code handling
 - Gates positioned at exact workflow step (not in a separate section)
 
@@ -236,4 +186,4 @@ Writing gates in a protocol doc is insufficient. Gates must be:
 1. In the agent's prompt (not just a referenced doc)
 2. Phrased as "DO NOT SKIP" with explicit exit-code handling
 3. Positioned at the exact workflow step where they run
-4. Daemon-enforced where possible (role_policies)
+4. Enforced at the appropriate tier (code-enforced via gate.sh/lefthook, or prompt-enforced via role definitions)

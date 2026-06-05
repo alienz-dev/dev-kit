@@ -1,13 +1,11 @@
 # dev-kit
 
-A portable development toolkit for AI-assisted software projects. Extracted from real production experience (watchdog, krew-cli, neo-ui, studenths) — not theoretical.
+A portable development toolkit for AI-assisted software projects. Extracted from real production experience — not theoretical.
 
 ## What This Is
 
 A repo you clone on a fresh machine to bootstrap a full AI-native development environment:
-- Terminal multiplexer with agent-aware layout
-- Coding agent integration (kiro default, pluggable for others)
-- Session daemon with pipeline enforcement and EventBus
+- Coding agent integration (Claude Code primary)
 - Spec-driven development with EARS acceptance criteria
 - Multi-agent orchestration (supervisor → test-manager → sprint-manager → coder)
 - ARIA v2 research protocol (parallel explorers + adversarial critic)
@@ -25,30 +23,54 @@ A repo you clone on a fresh machine to bootstrap a full AI-native development en
 - Not tied to any specific LLM provider or agent CLI
 - Not opinionated about your application's architecture
 
+## Language & Tooling
+
+The scaffold generates **TypeScript + Vitest + Node 22** projects by default. This is a
+starting point based on what the toolkit was built with, not a hard constraint.
+
+**To adapt for other languages (Python, Rust, Go, etc.):**
+- Replace `package.json` / `tsconfig.json` / `vitest.config.ts` generation in `scaffold.sh`
+- Update `templates/common/lefthook.yml` pre-commit hooks for your test runner
+- Modify the code style section in `templates/common/AGENTS.md.template`
+
+The agent infrastructure (CLAUDE.md, .claude/ config, workflow methodology, quality gates)
+is language-agnostic and works with any stack.
+
 ## Quick Start
 
 ```bash
 git clone <this-repo> ~/dev-kit
 cd ~/dev-kit
 
-# Full setup (kiro + zellij + daemon)
-./setup.sh              # interactive — detects OS, installs deps, configures
-./scaffold.sh <name>    # create a new project with full infrastructure
-
-# Minimal setup (any AI tool, no daemon required)
+# Minimal setup (recommended — works with any AI tool)
 ./setup.sh --minimal    # just node + git + directories
-./scaffold.sh <name> --minimal  # AGENTS.md + lefthook + pipeline state only
+./scaffold.sh <name> --minimal  # AGENTS.md + CLAUDE.md + lefthook + pipeline state
+
+# Full setup (multi-agent orchestration + submodules)
+./setup.sh              # interactive — detects OS, installs deps, auto-inits submodules
+./scaffold.sh <name>    # create a new project with full infrastructure
 
 # Check what's missing without installing
 ./setup.sh --check
+```
+
+> **Note:** `tools/issue-cli` and `tools/ui-visual-check` are optional submodules.
+> Update `.gitmodules` with your own repository URLs, or remove the submodules
+> if you don't need these tools. The core toolkit works without them.
+
+### Start coding
+
+```bash
+cd ~/projects/<name>
+claude              # Claude Code reads CLAUDE.md automatically
 ```
 
 ## Modes
 
 | Mode | What You Get | Requires |
 |------|-------------|----------|
-| Full | Multi-agent orchestration, daemon, multiplexer, all gates | kiro-cli, zellij, kiro-sessiond |
-| Minimal | AGENTS.md, lefthook pre-commit, file-based pipeline | git, node, any AI coding tool |
+| Full | Multi-agent orchestration, all gates | claude |
+| Minimal | AGENTS.md + CLAUDE.md, lefthook pre-commit, file-based pipeline | git, node, any AI coding tool |
 | Check | Reports missing tools, installs nothing | bash |
 
 See [docs/DEGRADED-MODE.md](docs/DEGRADED-MODE.md) for details on the 3 levels.
@@ -63,15 +85,12 @@ dev-kit/
 ├── PLAN.md                     # Detailed roadmap
 │
 ├── core/                       # Core infrastructure
-│   ├── multiplexer/            # Zellij config, layouts, plugins
-│   ├── coding-agent/           # Agent CLI integration (kiro default, pluggable)
-│   ├── session-daemon/         # kiro-sessiond (REQUIRED) — lifecycle, EventBus, pipeline
-│   └── agent-launcher/         # kiro-ctl spawn, briefing, result collection
+│   └── coding-agent/           # Agent CLI integration adapters
 │
 ├── workflow/                    # Development methodology
 │   ├── sdd/                    # Spec-Driven Development (EARS notation)
 │   ├── trio/                   # TRIO protocol (Test-Red-Implement-Observe)
-│   ├── pipeline/               # Daemon-enforced pipeline FSM
+│   ├── pipeline/               # File-based pipeline FSM (gate.sh)
 │   ├── grill/                  # Spec interrogation sessions
 │   ├── issue-lifecycle/        # Issue states, transitions, CLI
 │   └── retro/                  # Session retrospective extraction
@@ -97,13 +116,11 @@ dev-kit/
 │   └── ui-visual-check/        # Visual QA tool (submodule)
 │
 ├── templates/                  # Project templates
-│   ├── typescript-cli/
-│   ├── typescript-web/
-│   ├── python-service/
-│   └── common/                 # Shared: tsconfig, vitest, gitignore, etc.
+│   ├── common/                 # Shared: lefthook, agent rules, skills
+│   └── typescript-web/         # Web-specific: visual checks, design tokens
 │
 ├── infra/                      # System services
-│   ├── systemd/                # Service units (kiro-sessiond)
+│   ├── systemd/                # Service units
 │   ├── scripts/                # Utility scripts (start-server, stop-server, etc.)
 │   └── state/                  # Hot-memory, workspace state, memo templates
 │
@@ -130,7 +147,7 @@ User
               └── Reviewer (Tier 3)
 ```
 
-## Pipeline (Daemon-Enforced)
+## Pipeline (gate.sh + lefthook)
 
 ```
 plan → test → sprint → review → done | failed

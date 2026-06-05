@@ -1,6 +1,6 @@
 [submodule "tools/issue-cli"]
 	path = tools/issue-cli
-	url = git@bitbucket.org:mingxiali/issue-cli.git
+	url = https://github.com/YOUR_ORG/issue-cli.git
 [submodule "tools/ui-visual-check"]
 	path = tools/ui-visual-check
-	url = git@bitbucket.org:mingxiali/ui-visual-check.git
+	url = https://github.com/YOUR_ORG/ui-visual-check.git

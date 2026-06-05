@@ -58,7 +58,7 @@ Common failure modes from real production use, with root causes and fixes.
 
 ### Symptom: Agent tab closed unexpectedly
 **Cause:** Ctrl+C in spawned tab kills agent CLI (SIGINT to foreground group).
-**Fix:** Result file may still be on disk at `/tmp/kiro-sub-*-result.md`. Check manually.
+**Fix:** Result file may still be on disk at `/tmp/agent-*-result.md`. Check manually.
 **Prevention:** Launcher uses `set +e` + `trap '' INT HUP` for immunity.
 
 ### Symptom: Context lost after long session
@@ -104,7 +104,6 @@ Common failure modes from real production use, with root causes and fixes.
 **Fix:** Recover from reflog: `git reflog`, `git stash list`.
 **Prevention:** Rule: "Never discard uncommitted work you didn't create."
 
-### Symptom: Message not delivered to target agent
-**Cause:** Target pane ID changed (tab was closed and reopened).
-**Fix:** Re-resolve pane ID: `zellij action list-panes --json`
-**Prevention:** Use stable identifiers (session name + tab name) not raw pane IDs.
+### Symptom: Subagent not responding
+**Cause:** Subagent may have hit context limit or errored.
+**Fix:** Check subagent output via `TaskOutput` tool. Restart if needed.

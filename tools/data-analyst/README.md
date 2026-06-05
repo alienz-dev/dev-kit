@@ -50,13 +50,12 @@ Post-analysis statistical validation:
 
 ## Integration
 
-```bash
-# Kiro agent wraps the CLI tool
-kiro-ctl spawn data-analyst "Analyze churn patterns in users.csv" \
-  --subscribe --workdir ~/projects/analytics
+```
+# Dispatch data-analyst agent
+Agent(data-analyst: "Analyze churn patterns in users.csv")
 ```
 
-The kiro agent calls `~/projects/data-analyst-agent/run.py` with the task description.
+The agent wraps the CLI tool with the task description.
 
 ## When to Use
 

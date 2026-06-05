@@ -1,6 +1,6 @@
 # Pipeline Pattern
 
-Extracted from watchdog's engine-v2 pipeline system. A typed, composable stage pipeline for sequential data processing with error handling.
+A typed, composable stage pipeline for sequential data processing with error handling.
 
 ## Architecture
 
@@ -165,7 +165,7 @@ Subscribers can: log, notify, update dashboards, trigger downstream pipelines.
 
 ## FSM Integration
 
-Pipelines connect to state machines via events. Example from watchdog:
+Pipelines connect to state machines via events. Example:
 - `ingest` stage discovers new CVEs → fires `record_created` event
 - `sync_tickets` stage finds ticket→CVE mapping → fires `ticket_created` event
 - State machine transitions records based on events

@@ -3,3 +3,30 @@ dist/
 *.tsbuildinfo
 .env
 /tmp/
+
+# Sensitive files
+*.db
+*.sqlite
+*.sqlite3
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Local config
+CLAUDE.local.md
+settings.local.json
+*.local.*
+
+# State files
+.state/
+hot-memory-*.md
+memo-*.md
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db

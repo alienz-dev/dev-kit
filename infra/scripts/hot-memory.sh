@@ -3,12 +3,27 @@
 # Usage: hot-memory.sh add|replace|remove "<entry>" <workspace>
 set -euo pipefail
 
+# Portable sed in-place (BSD on macOS, GNU on Linux)
+_sed_i() {
+  if sed --version 2>/dev/null | grep -q GNU; then
+    sed -i "$@"
+  else
+    sed -i '' "$@"
+  fi
+}
+
 ACTION="${1:?Usage: hot-memory.sh add|replace|remove \"<entry>\" <workspace>}"
 ENTRY="${2:?}"
-WORKSPACE="${3:-default}"
 BUDGET=3000
 
-STATE_DIR="${HOME}/.kiro/state"
+# For add/remove: $2=entry, $3=workspace
+# For replace:    $2=old, $3=new, $4=workspace
+case "$ACTION" in
+  replace) WORKSPACE="${4:-default}" ;;
+  *)       WORKSPACE="${3:-default}" ;;
+esac
+
+STATE_DIR="${STATE_DIR:-${HOME}/.state}"
 mkdir -p "$STATE_DIR"
 FILE="$STATE_DIR/hot-memory-${WORKSPACE}.md"
 
@@ -39,17 +54,18 @@ case "$ACTION" in
     fi
     echo "- $ENTRY" >> "$FILE"
     # Update metadata
-    sed -i "s/^char-count:.*/char-count: $(wc -c < "$FILE")/" "$FILE"
-    sed -i "s/^updated:.*/updated: $(date -Iseconds)/" "$FILE"
+    _sed_i "s/^char-count:.*/char-count: $(wc -c < "$FILE")/" "$FILE"
+    _sed_i "s/^updated:.*/updated: $(date -Iseconds)/" "$FILE"
     echo "Added to $WORKSPACE hot memory"
     ;;
   replace)
     OLD="$ENTRY"
-    NEW="${4:?Usage: hot-memory.sh replace \"<old>\" \"<new>\" <workspace>}"
-    if grep -qF "$OLD" "$FILE"; then
-      sed -i "s|.*${OLD}.*|- ${NEW}|" "$FILE"
-      sed -i "s/^char-count:.*/char-count: $(wc -c < "$FILE")/" "$FILE"
-      sed -i "s/^updated:.*/updated: $(date -Iseconds)/" "$FILE"
+    NEW="${3:?Usage: hot-memory.sh replace \"<old>\" \"<new>\" <workspace>}"
+    # Match with or without "- " prefix (add prepends it)
+    if grep -qF -- "$OLD" "$FILE" || grep -qF -- "- $OLD" "$FILE"; then
+      _sed_i "s|.*${OLD}.*|- ${NEW}|" "$FILE"
+      _sed_i "s/^char-count:.*/char-count: $(wc -c < "$FILE")/" "$FILE"
+      _sed_i "s/^updated:.*/updated: $(date -Iseconds)/" "$FILE"
       echo "Replaced in $WORKSPACE hot memory"
     else
       echo "ERROR: Entry not found: $OLD"
@@ -57,10 +73,12 @@ case "$ACTION" in
     fi
     ;;
   remove)
-    if grep -qF "$ENTRY" "$FILE"; then
-      grep -vF "$ENTRY" "$FILE" > "${FILE}.tmp" && mv "${FILE}.tmp" "$FILE"
-      sed -i "s/^char-count:.*/char-count: $(wc -c < "$FILE")/" "$FILE"
-      sed -i "s/^updated:.*/updated: $(date -Iseconds)/" "$FILE"
+    # Match with or without "- " prefix (add prepends it)
+    if grep -qF -- "$ENTRY" "$FILE" || grep -qF -- "- $ENTRY" "$FILE"; then
+      # Remove both forms
+      grep -vF -- "$ENTRY" "$FILE" | grep -vF -- "- $ENTRY" > "${FILE}.tmp" && mv "${FILE}.tmp" "$FILE"
+      _sed_i "s/^char-count:.*/char-count: $(wc -c < "$FILE")/" "$FILE"
+      _sed_i "s/^updated:.*/updated: $(date -Iseconds)/" "$FILE"
       echo "Removed from $WORKSPACE hot memory"
     else
       echo "ERROR: Entry not found: $ENTRY"

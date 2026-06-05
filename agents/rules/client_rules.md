@@ -5,13 +5,13 @@ Universal safety rules loaded into every agent session. Procedural rules (issue 
 ---
 ## User Profile
 
-> [!error] **Respect ~/.kiro/user-profile.md.** This file contains the user's communication style, workflow preferences, and do-not-do rules. Read it at session start (loaded as a resource). Adapt your behavior accordingly. When the user corrects your behavior 3+ times on the same pattern during a session, update the profile at session-end via the "done" protocol.
+> [!error] **Respect the user profile.** The user's communication style, workflow preferences, and do-not-do rules are loaded as a resource at session start. Adapt your behavior accordingly. When the user corrects your behavior 3+ times on the same pattern during a session, update the profile at session-end via the "done" protocol.
 
 ## Tool Execution Safety
 
-> [!info] **`< /dev/null` is handled structurally.** `kiro-bash-guard.sh` (AMAZON_Q_CHAT_SHELL) closes stdin, captures stdout to temp files, and applies 300s timeout for ALL commands. TUI mode (2.4.1) also isolates stdin/stdout. Appending `< /dev/null` is harmless but no longer mandatory.
+> [!error] **Never let child processes inherit stdin (stdin closure risk).** Agent CLI spawns child processes with inherited stdin. Any command that reads stdin will hang the entire session with no recovery. Append `< /dev/null` to every shell command execution. Example: `npm test < /dev/null`, not `npm test`.
 
-> [!info] **Background servers use `start-server.sh`.** `kiro-bash-guard.sh` captures stdout to temp files (breaking fd inheritance), so raw backgrounding no longer hangs. `start-server.sh` is still the recommended pattern for readability and port management.
+> [!info] **Background server isolation via `start-server.sh`.** Any background server started without fd isolation can block the agent CLI on EOF. This provides fd isolation (stdout/stderr to logfile, stdin from /dev/null) and prevents agent CLI hangs when backgrounding servers. `start-server.sh` is the recommended pattern for readability and port management.
 
 > [!error] **Never change vitest pool:threads to pool:forks.** `pool: 'forks'` spawns workers that survive parent exit — orphans at ~2GB each. 6 workers = 13GB = system OOM. If tests are flaky with threads, fix test isolation — do NOT switch to forks.
 
@@ -47,7 +47,7 @@ Universal safety rules loaded into every agent session. Procedural rules (issue 
 
 ## Spawn Compliance
 
-> [!error] **Obey explicit spawn requests.** When the user explicitly asks to spawn, delegate, or hand off to a specific agent (keywords: spawn, delegate to, have X do, send to X, use X agent), you MUST execute `kiro-ctl spawn <agent> "task" --subscribe` immediately. Do not do the work yourself. Use the exact agent type specified. After spawning, report the spawn ID and stop. Origin: 2026-05-28 — agents repeatedly ignored spawn requests and did work inline.
+> [!error] **Obey explicit spawn requests.** When the user explicitly asks to spawn, delegate, or hand off to a specific agent (keywords: spawn, delegate to, have X do, send to X, use X agent), you MUST dispatch to that agent immediately. Do not do the work yourself. Use the exact agent type specified. After spawning, report the spawn ID and stop.
 
 ---
 
@@ -81,8 +81,6 @@ Universal safety rules loaded into every agent session. Procedural rules (issue 
 
 ## File Navigation
 
-> [!error] **Never search from `/` or `~` without scoping.** Unscoped searches are slow (4s+ traversing node_modules, .git, caches) and return noisy results from unrelated system paths. Before using `find` or `glob` on the home directory, read `~/.kiro/knowledge/home-tree.md` to identify the correct subdirectory. Then search within that specific path. Searching from `/` is banned. Searching from `~` requires `-maxdepth 3` minimum.
+> [!error] **Never search from `/` or `~` without scoping.** Unscoped searches are slow (traversing node_modules, .git, caches) and return noisy results from unrelated system paths. Identify the correct subdirectory first, then search within that specific path. Searching from `/` is banned. Searching from `~` requires `-maxdepth 3` minimum.
 
-> [!error] **Use `locate` for file-by-name lookups.** `locate -r "^/home/mingl/.*<pattern>"` is instant (0.03s) vs `find` (4s+). Use it for: finding where a file lives, listing project directories, checking if a path exists. Pipe through `grep -v node_modules` when needed.
-
-> [!error] **Scope searches to known directories.** The home tree at `~/.kiro/knowledge/home-tree.md` maps all key areas. Common targets: `~/projects/` (app repos), `~/work-enhancement/` (tooling repos), `~/vault/` (knowledge), `~/scripts/` (utilities), `~/infra/` (services). Never glob `**/*` from home root.
+> [!error] **Scope searches to known directories.** Common targets: `~/projects/` (app repos), `~/plans/` (plans). Never glob `**/*` from home root.

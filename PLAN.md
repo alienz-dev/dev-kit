@@ -1,5 +1,10 @@
 # dev-kit — Development Plan
 
+> **⚠️ ARCHIVED** — This is the original design document. The architecture has since been
+> simplified: Claude Code is the primary agent CLI, kiro references are historical, and the
+> multi-daemon/session-daemon design was replaced by Claude Code's native session management.
+> See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the current architecture.
+
 ## Design Principles
 
 1. **Pattern over prescription** — document the WHY and the pattern, not just the config file
