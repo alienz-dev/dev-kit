@@ -22,7 +22,8 @@ run_test() {
   fi
 }
 
-# Test: Gate passes for clean CSS
+# --- Functional tests ---
+
 test_clean_css() {
   local tmp_dir
   tmp_dir=$(mktemp -d)
@@ -33,25 +34,22 @@ test_clean_css() {
   cat > styles.css << 'EOF'
 :root {
   --primary-color: #007bff;
+  --spacing-md: 16px;
 }
 .button {
   color: var(--primary-color);
-  padding: 8px 16px;
+  padding: var(--spacing-md);
+  z-index: 10;
 }
 EOF
 
   if bash "$GATE_SCRIPT" > /dev/null 2>&1; then
-    cd "$orig_dir"
-    rm -rf "$tmp_dir"
-    return 0
+    cd "$orig_dir"; rm -rf "$tmp_dir"; return 0
   else
-    cd "$orig_dir"
-    rm -rf "$tmp_dir"
-    return 1
+    cd "$orig_dir"; rm -rf "$tmp_dir"; return 1
   fi
 }
 
-# Test: Gate fails for hardcoded colors
 test_hardcoded_colors() {
   local tmp_dir
   tmp_dir=$(mktemp -d)
@@ -60,25 +58,16 @@ test_hardcoded_colors() {
   cd "$tmp_dir"
 
   cat > styles.css << 'EOF'
-.button {
-  color: #ff0000;
-  background-color: rgb(0, 0, 255);
-}
+.button { color: #ff0000; background-color: rgb(0, 0, 255); }
 EOF
 
-  # Should fail (exit 1)
   if bash "$GATE_SCRIPT" > /dev/null 2>&1; then
-    cd "$orig_dir"
-    rm -rf "$tmp_dir"
-    return 1  # Should have failed
+    cd "$orig_dir"; rm -rf "$tmp_dir"; return 1
   else
-    cd "$orig_dir"
-    rm -rf "$tmp_dir"
-    return 0  # Correctly failed
+    cd "$orig_dir"; rm -rf "$tmp_dir"; return 0
   fi
 }
 
-# Test: Gate fails for missing alt text
 test_missing_alt() {
   local tmp_dir
   tmp_dir=$(mktemp -d)
@@ -90,26 +79,148 @@ test_missing_alt() {
 <img src="image.jpg">
 EOF
 
-  # Should fail (exit 1)
   if bash "$GATE_SCRIPT" > /dev/null 2>&1; then
-    cd "$orig_dir"
-    rm -rf "$tmp_dir"
-    return 1  # Should have failed
+    cd "$orig_dir"; rm -rf "$tmp_dir"; return 1
   else
-    cd "$orig_dir"
-    rm -rf "$tmp_dir"
-    return 0  # Correctly failed
+    cd "$orig_dir"; rm -rf "$tmp_dir"; return 0
   fi
 }
 
-# Test: Script is executable
+test_important() {
+  local tmp_dir
+  tmp_dir=$(mktemp -d)
+  local orig_dir
+  orig_dir=$(pwd)
+  cd "$tmp_dir"
+
+  cat > styles.css << 'EOF'
+.button { font-size: 12px !important; }
+EOF
+
+  if bash "$GATE_SCRIPT" > /dev/null 2>&1; then
+    cd "$orig_dir"; rm -rf "$tmp_dir"; return 1
+  else
+    cd "$orig_dir"; rm -rf "$tmp_dir"; return 0
+  fi
+}
+
+test_zindex_war() {
+  local tmp_dir
+  tmp_dir=$(mktemp -d)
+  local orig_dir
+  orig_dir=$(pwd)
+  cd "$tmp_dir"
+
+  cat > styles.css << 'EOF'
+.modal { z-index: 9999; }
+EOF
+
+  if bash "$GATE_SCRIPT" > /dev/null 2>&1; then
+    cd "$orig_dir"; rm -rf "$tmp_dir"; return 1
+  else
+    cd "$orig_dir"; rm -rf "$tmp_dir"; return 0
+  fi
+}
+
+test_zindex_ok() {
+  local tmp_dir
+  tmp_dir=$(mktemp -d)
+  local orig_dir
+  orig_dir=$(pwd)
+  cd "$tmp_dir"
+
+  cat > styles.css << 'EOF'
+.modal { z-index: 50; }
+.dropdown { z-index: 100; }
+EOF
+
+  if bash "$GATE_SCRIPT" > /dev/null 2>&1; then
+    cd "$orig_dir"; rm -rf "$tmp_dir"; return 0
+  else
+    cd "$orig_dir"; rm -rf "$tmp_dir"; return 1
+  fi
+}
+
+test_empty_link_aria() {
+  local tmp_dir
+  tmp_dir=$(mktemp -d)
+  local orig_dir
+  orig_dir=$(pwd)
+  cd "$tmp_dir"
+
+  cat > index.html << 'EOF'
+<a href="/details"></a>
+EOF
+
+  if bash "$GATE_SCRIPT" > /dev/null 2>&1; then
+    cd "$orig_dir"; rm -rf "$tmp_dir"; return 1
+  else
+    cd "$orig_dir"; rm -rf "$tmp_dir"; return 0
+  fi
+}
+
+test_root_definitions_not_flagged() {
+  local tmp_dir
+  tmp_dir=$(mktemp -d)
+  local orig_dir
+  orig_dir=$(pwd)
+  cd "$tmp_dir"
+
+  # CSS variable definitions should NOT be flagged as hardcoded
+  cat > styles.css << 'EOF'
+:root {
+  --color-primary: #2563eb;
+  --color-bg: #ffffff;
+  --color-text: #1f2937;
+  --space-md: 16px;
+  --font-size: 14px;
+}
+.button {
+  color: var(--color-primary);
+  padding: var(--space-md);
+}
+EOF
+
+  if bash "$GATE_SCRIPT" > /dev/null 2>&1; then
+    cd "$orig_dir"; rm -rf "$tmp_dir"; return 0
+  else
+    cd "$orig_dir"; rm -rf "$tmp_dir"; return 1
+  fi
+}
+
+test_strict_promotes_warnings() {
+  local tmp_dir
+  tmp_dir=$(mktemp -d)
+  local orig_dir
+  orig_dir=$(pwd)
+  cd "$tmp_dir"
+
+  # Only has a hardcoded breakpoint (warning normally)
+  cat > styles.css << 'EOF'
+@media (max-width: 768px) { .card { display: none; } }
+EOF
+
+  # Without --strict: should pass (warning only)
+  if ! bash "$GATE_SCRIPT" > /dev/null 2>&1; then
+    cd "$orig_dir"; rm -rf "$tmp_dir"; return 1  # Should pass without --strict
+  fi
+
+  # With --strict: should fail (warning promoted)
+  if bash "$GATE_SCRIPT" --strict > /dev/null 2>&1; then
+    cd "$orig_dir"; rm -rf "$tmp_dir"; return 1  # Should fail with --strict
+  fi
+
+  cd "$orig_dir"; rm -rf "$tmp_dir"; return 0
+}
+
+# --- Structural tests ---
+
 test_is_executable() {
   if [[ -x "$GATE_SCRIPT" ]]; then return 0; fi
   echo "  Script is not executable"
   return 1
 }
 
-# Test: Script has proper shebang
 test_has_shebang() {
   local first_line
   first_line=$(head -1 "$GATE_SCRIPT")
@@ -118,14 +229,12 @@ test_has_shebang() {
   return 1
 }
 
-# Test: Script uses set -euo pipefail
 test_strict_mode() {
   if grep -q 'set -euo pipefail' "$GATE_SCRIPT"; then return 0; fi
   echo "  Missing set -euo pipefail"
   return 1
 }
 
-# Test: Unknown flag exits 2
 test_unknown_flag() {
   bash "$GATE_SCRIPT" --bogus 2>/dev/null && { echo "  Expected exit 2, got 0"; return 1; }
   local exit_code=$?
@@ -134,7 +243,6 @@ test_unknown_flag() {
   return 1
 }
 
-# Test: --help flag works
 test_help_flag() {
   local output
   output=$(bash "$GATE_SCRIPT" --help 2>&1)
@@ -149,6 +257,12 @@ echo ""
 run_test "Clean CSS passes" test_clean_css
 run_test "Hardcoded colors fail" test_hardcoded_colors
 run_test "Missing alt text fails" test_missing_alt
+run_test "!important fails" test_important
+run_test "z-index > 100 fails" test_zindex_war
+run_test "z-index <= 100 passes" test_zindex_ok
+run_test "Empty link fails (ARIA)" test_empty_link_aria
+run_test ":root definitions not flagged" test_root_definitions_not_flagged
+run_test "--strict promotes warnings" test_strict_promotes_warnings
 run_test "Script is executable" test_is_executable
 run_test "Script has shebang" test_has_shebang
 run_test "Script uses strict mode" test_strict_mode

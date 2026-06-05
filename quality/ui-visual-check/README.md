@@ -61,11 +61,13 @@ The VISUAL gate composes three independent layers. Layer 1 always runs; Layers 2
 │  visual-gate.sh                                 │
 │                                                 │
 │  Layer 1: Static Analysis    (<5s, no deps)     │
-│  ├── Hardcoded colors                           │
-│  ├── !important abuse                           │
-│  ├── Missing alt text                           │
-│  ├── Hardcoded breakpoints                      │
-│  └── Design token drift                         │
+│  ├── Hardcoded colors              [ERROR]      │
+│  ├── Missing alt text              [ERROR]      │
+│  ├── !important abuse              [ERROR]      │
+│  ├── z-index wars (>100)           [ERROR]      │
+│  ├── Missing ARIA                  [ERROR]      │
+│  ├── Hardcoded breakpoints         [WARN]       │
+│  └── Design token drift            [WARN]       │
 │                                                 │
 │  Layer 2: Visual Regression  (15-30s, Playwright)│
 │  ├── Screenshot pixel diff                      │
@@ -97,6 +99,9 @@ visual-gate.sh --gate --url http://localhost:5173 --design docs/DESIGN.md
 
 # Layer 1 only (no dev server needed)
 visual-gate.sh --files $'src/components/Header.tsx'
+
+# Layer 1 strict mode (warnings become errors)
+ui-visual-check.sh --strict
 
 # Or set DEV_SERVER_URL once and omit --url
 export DEV_SERVER_URL=http://localhost:5173
