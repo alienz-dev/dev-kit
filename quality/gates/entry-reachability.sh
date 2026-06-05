@@ -2,14 +2,9 @@
 # entry-reachability.sh — WIRING gate: Check for orphaned modules and dead imports
 set -euo pipefail
 
-# Usage: entry-reachability.sh [--fix]
+# Usage: entry-reachability.sh
 # Exit 0: all modules are reachable
 # Exit 1: orphaned modules or dead imports found
-
-FIX_MODE=0
-if [[ "${1:-}" == "--fix" ]]; then
-  FIX_MODE=1
-fi
 
 # Find all TypeScript/JavaScript source files
 find_src_files() {
@@ -48,8 +43,8 @@ is_imported() {
     grep -v ".git/" | \
     grep -v "tests/" | \
     grep -v "__tests__" | \
-    grep -v "*.test.*" | \
-    grep -v "*.spec.*" | \
+    grep -v "\.test\." | \
+    grep -v "\.spec\." | \
     grep -v "${file}" | \
     head -1 | \
     wc -l

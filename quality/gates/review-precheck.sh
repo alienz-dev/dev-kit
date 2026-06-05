@@ -2,14 +2,9 @@
 # review-precheck.sh — REVIEW gate: Pre-review checks
 set -euo pipefail
 
-# Usage: review-precheck.sh [--fix]
+# Usage: review-precheck.sh
 # Exit 0: ready for review
 # Exit 1: issues found
-
-FIX_MODE=0
-if [[ "${1:-}" == "--fix" ]]; then
-  FIX_MODE=1
-fi
 
 # Check for TODO/FIXME comments
 check_todos() {
@@ -157,6 +152,12 @@ fi
 echo ""
 echo "Checking types..."
 if ! check_types; then
+  ERRORS=$((ERRORS + 1))
+fi
+
+echo ""
+echo "Checking lint..."
+if ! check_lint; then
   ERRORS=$((ERRORS + 1))
 fi
 

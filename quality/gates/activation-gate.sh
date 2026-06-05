@@ -2,14 +2,9 @@
 # activation-gate.sh — ACTIVATION gate: Verify feature is reachable from entry point
 set -euo pipefail
 
-# Usage: activation-gate.sh [--fix]
+# Usage: activation-gate.sh
 # Exit 0: feature is reachable
 # Exit 1: feature is not reachable
-
-FIX_MODE=0
-if [[ "${1:-}" == "--fix" ]]; then
-  FIX_MODE=1
-fi
 
 # Find entry points
 find_entry_points() {
@@ -22,7 +17,7 @@ find_entry_points() {
 
 # Find recently modified source files
 find_modified_files() {
-  git diff --name-only HEAD~1 2>/dev/null | grep -E "\.(ts|tsx|js|jsx)$" | grep -v "node_modules" | grep -v "dist" | grep -v ".git" | grep -v "tests" | grep -v "__tests__" | grep -v "*.test.*" | grep -v "*.spec.*"
+  git diff --name-only HEAD~1 2>/dev/null | grep -E "\.(ts|tsx|js|jsx)$" | grep -v "node_modules" | grep -v "dist" | grep -v ".git" | grep -v "tests" | grep -v "__tests__" | grep -v "\.test\." | grep -v "\.spec\."
 }
 
 # Check if a file is reachable from entry points

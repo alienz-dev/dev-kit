@@ -4,6 +4,8 @@ title: "Feature Name"
 status: draft | approved | implementing | verified | shipped
 version: "1.0"
 created: YYYY-MM-DD
+approved_by: ""  # Required for P0/P1 and complexity 8+
+approval_date: ""  # Set when approved_by is filled
 linked_issues: [PROJECT-NNN]
 test-files:
   - tests/unit/feature.test.ts

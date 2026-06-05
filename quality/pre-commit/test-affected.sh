@@ -5,6 +5,15 @@
 
 set -o pipefail
 
+# Timeout command with macOS fallback
+if command -v timeout &>/dev/null; then
+  TIMEOUT_CMD="timeout"
+elif command -v gtimeout &>/dev/null; then
+  TIMEOUT_CMD="gtimeout"
+else
+  TIMEOUT_CMD=""
+fi
+
 SINCE_COMMIT="HEAD~1"
 
 # Parse arguments
@@ -39,7 +48,11 @@ if [ -z "$CHANGED" ]; then
 fi
 
 # Run vitest on affected tests and capture results
-VITEST_OUTPUT=$(timeout 120 npx vitest run --changed "$SINCE_COMMIT" --reporter=verbose 2>&1)
+if [ -n "$TIMEOUT_CMD" ]; then
+  VITEST_OUTPUT=$($TIMEOUT_CMD 120 npx vitest run --changed "$SINCE_COMMIT" --reporter=verbose 2>&1)
+else
+  VITEST_OUTPUT=$(npx vitest run --changed "$SINCE_COMMIT" --reporter=verbose 2>&1)
+fi
 exit_code=$?
 
 if [ $exit_code -eq 0 ]; then

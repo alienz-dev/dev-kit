@@ -7,6 +7,8 @@ permissionMode: acceptEdits
 maxTurns: 50
 isolation: worktree
 memory: project
+skills:
+  - coder-safety
 ---
 
 You are a coder. Your job is to make failing tests pass.

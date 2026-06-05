@@ -5,6 +5,15 @@
 
 set -o pipefail
 
+# Timeout command with macOS fallback
+if command -v timeout &>/dev/null; then
+  TIMEOUT_CMD="timeout"
+elif command -v gtimeout &>/dev/null; then
+  TIMEOUT_CMD="gtimeout"
+else
+  TIMEOUT_CMD=""
+fi
+
 # Allow test harness to override vitest binary and changed files
 VITEST="${VITEST_BIN:-npx vitest run --changed HEAD --reporter=dot --bail 1}"
 CHANGED_FILES="${GIT_DIFF_FILES:-$(git diff --cached --name-only 2>/dev/null)}"
@@ -37,9 +46,17 @@ fi
 
 # Run vitest with 60 second timeout
 if [ -n "$EXTRA_TESTS" ]; then
-  timeout 60 bash -c "$VITEST $EXTRA_TESTS" 2>&1
+  if [ -n "$TIMEOUT_CMD" ]; then
+    $TIMEOUT_CMD 60 bash -c "$VITEST $EXTRA_TESTS" 2>&1
+  else
+    bash -c "$VITEST $EXTRA_TESTS" 2>&1
+  fi
 else
-  timeout 60 bash -c "$VITEST" 2>&1
+  if [ -n "$TIMEOUT_CMD" ]; then
+    $TIMEOUT_CMD 60 bash -c "$VITEST" 2>&1
+  else
+    bash -c "$VITEST" 2>&1
+  fi
 fi
 
 exit_code=$?

@@ -2,17 +2,21 @@
 id: 2
 project: dev-kit
 type: bug
-state: open
+state: in_progress
 severity: P1
 scope: work
+reporter: unknown
 assignee: kiro
 tags:
   - hook
   - block-dangerous
+linked_specs: []
+linked_tests: []
 linked_files: []
 links: []
+deps: []
 created: '2026-06-04T12:25:31.360+00:00'
-updated: '2026-06-04T12:25:47.149+00:00'
+updated: '2026-06-05T10:20:43.808+00:00'
 ---
 # rm -rf /tmp/build was falsely blocked by hook
 
@@ -45,6 +49,7 @@ Expected output: ``
 
 ## History
 - 2026-06-04T12:25:31.360+00:00 — opened (kiro)
+- 2026-06-05T10:20:43.808+00:00 — open → in_progress (kiro)
 
 ## Comments
 - 2026-06-04T12:25:47.149+00:00 (kiro): [progress] FIXED: rm -rf /tmp/build was matched by rm -rf / pattern. Regex now checks for bare / not /path. Verified with 17 test cases.

@@ -2,14 +2,9 @@
 # wave-smoke.sh — Wave completion gate: Verify all tests pass and no uncommitted changes
 set -euo pipefail
 
-# Usage: wave-smoke.sh [--fix]
+# Usage: wave-smoke.sh
 # Exit 0: wave is clean
 # Exit 1: wave has issues
-
-FIX_MODE=0
-if [[ "${1:-}" == "--fix" ]]; then
-  FIX_MODE=1
-fi
 
 # Check for uncommitted changes
 check_uncommitted_changes() {

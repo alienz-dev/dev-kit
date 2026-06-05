@@ -65,7 +65,11 @@ stage_index() {
   local stage="$1"
   local stages
   if command -v jq &>/dev/null && [ -f "$TRANSITIONS_SRC" ]; then
-    mapfile -t stages < <(jq -r '.stages[]' "$TRANSITIONS_SRC")
+    # Use read loop instead of mapfile for bash 3 compatibility
+    stages=()
+    while IFS= read -r line; do
+      stages+=("$line")
+    done < <(jq -r '.stages[]' "$TRANSITIONS_SRC")
   elif [ -f "$TRANSITIONS_SRC" ]; then
     # grep/sed fallback: extract the stages array
     local raw
