@@ -8,23 +8,48 @@ argument-hint: <feature-name>
 
 You are the SDD Orchestrator. You run the automatic implementation phase of the SDD pipeline. The design phase (BA, grill, spec approval) is already complete. You handle everything from plan derivation to code review.
 
+## Resume Mode
+
+If `$ARGUMENTS` starts with "resume", read the pipeline state and continue from where it left off:
+
+```bash
+bash workflow/pipeline/gate.sh status
+```
+
+1. Read `.pipeline/state.json` to get current stage and feature
+2. Read the spec from the feature name
+3. Skip to the appropriate phase:
+   - If stage is `plan` → start at Phase 1
+   - If stage is `test` → start at Phase 2
+   - If stage is `sprint` → start at Phase 3
+   - If stage is `review` → start at Phase 4
+   - If stage is `done` → report complete
+4. Resume the pipeline from that phase
+
 ## Pre-flight Checks
 
 ### 1. Find the approved spec
 ```bash
-# Try common spec path patterns
-SPEC_FILE=$(find specs/ -name "SPEC-*${ARGUMENTS}*" -o -name "SPEC-*$(echo $ARGUMENTS | tr '[:lower:]' '[:upper:]')*" 2>/dev/null | head -1)
+# Try common spec path patterns (case-insensitive, strip hyphens)
+ARG_UPPER=$(echo "$ARGUMENTS" | tr '[:lower:]' '[:upper:]' | tr -d '-')
+ARG_SLUG=$(echo "$ARGUMENTS" | tr '[:lower:]' '[:upper:]' | tr '-' '_')
+SPEC_FILE=$(find specs/ -iname "SPEC-*${ARG_UPPER}*" -o -iname "SPEC-*${ARG_SLUG}*" -o -iname "SPEC-*${ARGUMENTS}*" 2>/dev/null | head -1)
 ```
 
-If no spec found, tell the user: "No spec found for '$ARGUMENTS'. Run /grill first to create one."
+If no spec found, try: `ls specs/` and look for a match. If still not found, tell the user: "No spec found for '$ARGUMENTS'. Run /grill first to create one, or pass the spec path directly: /sdd specs/SPEC-FOO.md"
 
 ### 2. Validate spec status
 Read the spec file. Check frontmatter `status:` field.
 - If `approved` → proceed
-- If `draft` → tell user: "Spec is still draft. Run /ba-validate and approve before implementing."
+- If `draft` → tell user: "Spec is still draft. Run /approve <spec> to approve it."
 - If `implementing`/`verified`/`shipped` → tell user: "Spec already at status X. Use issue pipeline for changes."
 
-### 3. Validate spec quality
+### 3. Verify grill occurred
+Check if the spec's Clarifications section (§6 or "## Clarifications") has content.
+- If non-empty → grill occurred, proceed
+- If empty → warn: "Spec has no clarifications. Was a grill session run? Proceeding anyway."
+
+### 4. Validate spec quality
 ```bash
 bash workflow/sdd/validate-spec.sh "$SPEC_FILE"
 ```
@@ -110,80 +135,78 @@ Test Manager: complete
 
 ---
 
-## Phase 3: Implementation (GREEN Gate via /trio)
+## Phase 3: Implementation (Delegate to /trio)
 
 Read `.pipeline/test_map.json` to get test file paths.
 
-Run the TRIO implementation cycle:
-
-### Wave Dispatch
-For each wave in the plan:
-1. Identify test files for this wave (from test_map visible tests)
-2. Identify source files that can be modified (from plan)
-3. Spawn up to 3 coders in parallel:
-
+Delegate the implementation cycle to the /trio skill:
 ```
-Agent({
-  subagent_type: "coder",
-  prompt: "Make these tests pass: <test files>\n\nFiles you may modify: <source files>\nFiles you may read: <imports>\n\nDO NOT read specs/ directory.\nDO NOT modify tests/ except to fix setup.\n\nVerification: npm test -- <test files>\nExpected: all tests pass",
-  isolation: "worktree",
-  model: "sonnet"
-})
+/trio $ARGUMENTS
 ```
 
-4. Wait for all coders in wave to complete
-5. Merge worktree changes
-6. Run GREEN gate:
+The /trio skill handles:
+- Wave dispatch (coder spawning, worktree isolation)
+- GREEN gate with escalating retries
+- Failure analysis (diagnostic agent after 3 retries)
+- Hidden gate
+- Post-wave gates (wiring, wave-smoke)
+
+After /trio completes, read the pipeline state:
 ```bash
-npm test 2>&1
-```
-7. If GREEN fails: re-dispatch failing coder with test output (max 3 retries per wave)
-
-### Post-Wave Gates
-After each wave passes GREEN:
-```bash
-# Wiring gate
-bash quality/gates/entry-reachability.sh
-
-# Wave smoke
-bash quality/gates/wave-smoke.sh
-```
-
-### Hidden Gate (after all waves)
-```bash
-npm test -- tests/hidden/ 2>&1
-```
-If hidden fail: promote failing hidden test to visible, re-dispatch coder (max 1 retry).
-
-Advance pipeline:
-```bash
-bash workflow/pipeline/gate.sh advance sprint_complete
+bash workflow/pipeline/gate.sh status
 ```
 
 Report:
 ```
-Implementation: complete
-  Waves: <N>
-  Coders dispatched: <N>
-  GREEN: all visible tests pass ✓
-  Wiring: no orphaned modules ✓
-  Hidden: all hidden tests pass ✓
+Implementation: complete (via /trio)
+  Pipeline stage: <stage>
 ```
 
 ---
 
-## Phase 4: Review
+## Phase 4: Review (Multi-Perspective)
 
 Determine reviewer tier from complexity:
-- Complexity 4-7 → reviewer-lite
-- Complexity 8+ → reviewer (full)
+- Complexity 4-7 → reviewer-lite (single reviewer)
+- Complexity 8+ → multi-perspective review (3 reviewers in parallel)
 - Auto-promote to full if paths match: /auth/, /security/, /crypto/, /api/, /schema/, /migration
 
-Spawn reviewer:
+### Multi-Perspective Review (complexity 8+)
+Spawn 3 reviewers in parallel with different focus:
+
+```
+# Security reviewer
+Agent({
+  subagent_type: "reviewer",
+  prompt: "Review for SECURITY issues only.\nSpec: <SPEC_FILE>\nModified files: <list>\n\nFocus: injection, auth bypass, data leaks, input validation, secrets handling.\nIgnore style, naming, minor issues.\nVerdict: APPROVE | REQUEST_CHANGES",
+  model: "sonnet"
+})
+
+# Correctness reviewer
+Agent({
+  subagent_type: "reviewer",
+  prompt: "Review for CORRECTNESS issues only.\nSpec: <SPEC_FILE>\nModified files: <list>\n\nFocus: logic errors, edge cases, error handling, off-by-one, null handling.\nIgnore style, naming, minor issues.\nVerdict: APPROVE | REQUEST_CHANGES",
+  model: "sonnet"
+})
+
+# Performance reviewer
+Agent({
+  subagent_type: "reviewer",
+  prompt: "Review for PERFORMANCE issues only.\nSpec: <SPEC_FILE>\nModified files: <list>\n\nFocus: N+1 queries, missing indexes, unnecessary allocations, blocking I/O.\nIgnore style, naming, minor issues.\nVerdict: APPROVE | REQUEST_CHANGES",
+  model: "sonnet"
+})
+```
+
+Aggregate verdicts:
+- Any REQUEST_CHANGES → REQUEST_CHANGES (with combined findings)
+- All APPROVE → APPROVE
+
+### Single Reviewer (complexity 4-7)
+Spawn reviewer-lite (adversarial):
 ```
 Agent({
-  subagent_type: "<reviewer-lite|reviewer>",
-  prompt: "Review changes for <feature>.\nSpec: <SPEC_FILE>\nModified files: <list from coder results>\n\nProduce verdict: APPROVE | APPROVE_WITH_COMMENTS | REQUEST_CHANGES",
+  subagent_type: "reviewer-lite",
+  prompt: "Review changes for <feature>. Be adversarial — try to find bugs, not validate.\nSpec: <SPEC_FILE>\nModified files: <list>\n\nCheck: edge cases, error paths, security, concurrency.\nVerdict: APPROVE | APPROVE_WITH_COMMENTS | REQUEST_CHANGES",
   model: "sonnet"
 })
 ```

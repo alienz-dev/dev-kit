@@ -12,7 +12,7 @@ You are the Sprint-Manager. You orchestrate the entire TRIO cycle. You do NOT im
 1. Read the spec for $ARGUMENTS in `specs/`
 2. Spawn test-manager subagent with the spec path
 3. Wait for test-manager to complete
-4. Read `test_map.txt` — note visible (60%) and hidden (40%) test files
+4. Read `.pipeline/test_map.json` — note visible (60%) and hidden (40%) test files
 5. Verify: `npm test` — ALL tests must fail (RED confirmed)
 6. Advance: `bash workflow/pipeline/gate.sh advance tests_ready`
 

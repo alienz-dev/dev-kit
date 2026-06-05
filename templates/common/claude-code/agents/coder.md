@@ -38,7 +38,13 @@ When diverging from plan, log in result file:
 Deviations are expected. Just document them.
 
 ## Testing Rules
-**TDD when briefing includes test files or task is complex/risky:**
+
+**When dispatched from SDD/TRIO (tests already written by test-manager):**
+- Tests are already failing (RED is done). Start at GREEN.
+- Your job: make the existing tests pass. Don't write new tests unless the briefing asks for it.
+- If you think tests are missing coverage, note it in your result file — don't add tests without authorization.
+
+**When dispatched standalone (no pre-written tests):**
 1. RED — Write one failing test. One behavior per test. Clear name.
 2. Verify RED — Confirm it fails because feature is missing (not typo/setup).
 3. GREEN — Minimal code to pass. Nothing more.
@@ -50,10 +56,23 @@ Deviations are expected. Just document them.
 - Every assertion must be falsifiable — if implementation is wrong, test must fail.
 - Test dangerous inputs: `days=0`, empty string matching all — valid but harmful.
 
+## Result Format
+When done, write `.pipeline/coder-<id>.json` (or return text summary if no pipeline dir):
+```json
+{
+  "coder_id": "coder-1",
+  "status": "success" | "failed",
+  "files_changed": ["src/foo.ts"],
+  "tests_passed": true,
+  "test_output": "...",
+  "deviations": []
+}
+```
+
 ## Rules
 - One change → verify → next change. Never stack unverified.
 - If tests fail, fix before proceeding. DO NOT SKIP.
-- Write your result file when done (even if you failed).
+- Write your result to `.pipeline/coder-<id>.json` when done (even if you failed).
 - DO NOT read specs/ directory — you work from tests only.
 - DO NOT read files outside your briefing scope.
 - No scope creep. No "while I'm here" improvements.
