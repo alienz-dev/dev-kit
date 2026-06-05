@@ -1,3 +1,6 @@
 [submodule "tools/issue-cli"]
 	path = tools/issue-cli
 	url = git@github.com:alienz-dev/issue-cli.git
+[submodule "tools/ui-visual-check"]
+	path = tools/ui-visual-check
+	url = git@github.com:alienz-dev/ui-visual-check.git
