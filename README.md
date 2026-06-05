@@ -153,3 +153,32 @@ plan → test → sprint → review → done | failed
 
 Gates per wave: `trio-preflight → GREEN → wiring → visual → wave-smoke`
 After all waves: `hidden → activation → review`
+
+## SDD Commands (Claude Code Skills)
+
+The SDD system runs in three phases: **Design** (interactive) → **Implementation** (automatic) → **Review** (human).
+
+| Command | Phase | What It Does |
+|---------|-------|-------------|
+| `<description>` | Design | Describe what you want, agent gathers requirements |
+| `/grill <topic>` | Design | Interactive design interview (Q&A with user) |
+| `/ba-validate <spec>` | Design | Validate spec quality (structural + semantic) |
+| `/approve <spec>` | Design | Approve spec for implementation |
+| `/sdd <feature>` | Implementation | Run full pipeline (automatic, no human needed) |
+| `/sdd resume <feature>` | Implementation | Resume failed pipeline from current stage |
+| `/spec-align <spec>` | Maintenance | Compare spec vs code, find divergences |
+| `/researcher <question>` | Research | Deep investigation (parallel explorers) |
+
+### Workflow
+
+```
+1. User: "add dark mode"
+2. Agent: gathers requirements, asks design questions
+3. User: answers questions, approves spec
+4. User: "/sdd dark-mode"
+5. Agent: runs implementation automatically
+6. User: reviews result, files issues if needed
+7. User: "/sdd dark-mode" again for fixes
+```
+
+See [docs/USER-GUIDE.md](docs/USER-GUIDE.md) for detailed usage.
