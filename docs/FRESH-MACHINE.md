@@ -98,7 +98,7 @@ command -v claude && echo "✓ Coding agent"
 
 ## Corporate Environment Extras
 
-### TLS/CA Bundle (Zscaler, corporate proxy)
+### TLS/CA Bundle (corporate proxy)
 
 ```bash
 # Find your corporate CA bundle

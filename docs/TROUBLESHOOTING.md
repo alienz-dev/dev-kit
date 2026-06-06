@@ -43,7 +43,7 @@ Common failure modes from real production use, with root causes and fixes.
 **Prevention:** Token refresh timer running as systemd service.
 
 ### Symptom: "unable to get local issuer certificate" from Node.js
-**Cause:** Corporate proxy (Zscaler) intercepting TLS. Node doesn't use system CA store.
+**Cause:** Corporate proxy intercepting TLS. Node doesn't use system CA store.
 **Fix:** `export NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt`
 **Prevention:** Set in `.bashrc` and in systemd service `Environment=` lines.
 
