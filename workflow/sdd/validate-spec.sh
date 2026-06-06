@@ -110,6 +110,11 @@ if ! grep -qE "^## .*Constraints" "$SPEC_FILE"; then
   WARNINGS=$((WARNINGS + 1))
 fi
 
+if ! grep -qE "^## .*Debugging" "$SPEC_FILE" && ! grep -qE "^## §8" "$SPEC_FILE"; then
+  echo "WARNING: Missing Debugging & Observability section (§8) — features without debugging AC create unmaintainable code"
+  WARNINGS=$((WARNINGS + 1))
+fi
+
 # Check section numbering consistency
 if grep -qE "^## [A-Z]" "$SPEC_FILE" && ! grep -qE "^## §[0-9]" "$SPEC_FILE"; then
   echo "WARNING: Sections use unnumbered format — canonical is '## N SectionName'"

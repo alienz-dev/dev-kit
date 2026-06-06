@@ -125,6 +125,10 @@ test-files:
 
 ## §7 Visual Acceptance Criteria (if UI)
 <See Visual Acceptance Criteria section below>
+
+## §8 Debugging & Observability
+<Diagnostic commands, error messages, failure modes, logging, debugging AC>
+<See Debugging & Observability section below>
 ```
 
 ## Visual Acceptance Criteria (UI Features)
@@ -150,6 +154,38 @@ WHEN a plan modifies UI files (.tsx, .jsx, .vue, .svelte, .css, .scss, .html), i
 ```
 
 **Flow:** Planner criteria → test-manager targets → sprint-manager visual gate
+
+## Debugging & Observability (All Features)
+
+Every spec MUST include §8 with these subsections. This is not optional — features without
+debugging acceptance criteria create unmaintainable code.
+
+### Diagnostic Commands
+| Command | What it proves | Expected output |
+|---------|---------------|-----------------|
+| <command> | <what working state looks like> | <expected> |
+
+### Error Messages (EARS)
+- IF <failure condition> THEN THE system SHALL display "<specific actionable message>"
+- WHEN <error occurs> THE system SHALL log <what to log, structured format>
+
+### Failure Modes
+| Failure | Symptom | How to identify | How to fix |
+|---------|---------|-----------------|------------|
+| <mode> | <what user sees> | <diagnostic step> | <remedy> |
+
+### Logging & Output
+- WHAT is logged: <events, decisions, errors>
+- FORMAT: <structured JSON / human-readable / both>
+- WHERE: <stdout / file / both>
+
+### Debugging Acceptance Criteria (EARS)
+- WHEN <operation> fails THE system SHALL log <context needed to diagnose>
+- IF <silent failure mode> THEN THE system SHALL <surface the problem>
+- THE system SHALL provide a < --dry-run / --verbose / status > command for troubleshooting
+
+**Grill prompt:** "When this fails at 2am, what does the user see? What log output proves it's
+working? What are the 3 most likely failure modes and how to identify each?"
 
 ## Spec-to-Test Traceability
 

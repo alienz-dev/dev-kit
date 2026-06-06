@@ -63,3 +63,29 @@ test-files:
 <Passed to sprint-manager for visual gate>
 - Page: /dashboard — check: layout, token usage, responsive
 - Page: /settings — check: form alignment, spacing
+
+## §8 Debugging & Observability
+
+### Diagnostic Commands
+| Command | What it proves | Expected output |
+|---------|---------------|-----------------|
+| <command> | <what working state looks like> | <expected> |
+
+### Error Messages (EARS)
+- IF <failure condition> THEN THE system SHALL display "<specific actionable message>"
+- WHEN <error occurs> THE system SHALL log <what to log, structured format>
+
+### Failure Modes
+| Failure | Symptom | How to identify | How to fix |
+|---------|---------|-----------------|------------|
+| <mode> | <what user sees> | <diagnostic step> | <remedy> |
+
+### Logging & Output
+- WHAT is logged: <events, decisions, errors>
+- FORMAT: <structured JSON / human-readable / both>
+- WHERE: <stdout / file / both>
+
+### Debugging Acceptance Criteria (EARS)
+- WHEN <operation> fails THE system SHALL log <context needed to diagnose>
+- IF <silent failure mode> THEN THE system SHALL <surface the problem>
+- THE system SHALL provide a < --dry-run / --verbose / status > command for troubleshooting

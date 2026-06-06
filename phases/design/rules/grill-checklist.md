@@ -46,6 +46,16 @@ Specs written by the planner without adversarial review have blind spots:
 - [ ] What's the minimum test that proves this works?
 - [ ] Are there hidden tests that should pass?
 
+### 5b. Debugging & Observability Questions
+- [ ] When this fails at 2am, what does the user see? (error message quality)
+- [ ] What log output does this produce? (structured? machine-parseable?)
+- [ ] Is there a --verbose or --debug flag for troubleshooting?
+- [ ] What diagnostic command proves this is working? (health check, status command)
+- [ ] What are the 3 most likely failure modes and how to identify each?
+- [ ] If this silently fails (no error, wrong result), how would the user notice?
+- [ ] What state does this leave behind on failure? (temp files, partial writes, stuck locks)
+- [ ] Is there a way to dry-run or preview before committing changes?
+
 ### 6. Tool-Specific Questions
 - [ ] Does this script work on macOS bash 3.2? (no associative arrays, no `grep -P`)
 - [ ] Does this script handle missing dependencies gracefully?

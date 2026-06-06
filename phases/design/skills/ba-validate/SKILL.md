@@ -57,6 +57,14 @@ Check if frontmatter uses `test-files:` (hyphen, canonical) or `test_files:` (un
 ### 1g. Section Numbering
 Check if sections use numbered format (`## 1 Overview`) or unnumbered (`## Overview`). Both accepted but flag unnumbered as non-canonical.
 
+### 1h. Debugging & Observability (§8)
+Check for §8 Debugging & Observability section. Must contain:
+- Diagnostic Commands table (at least 1 command)
+- At least 1 EARS debugging acceptance criterion (WHEN/IF ... THE system SHALL log/display ...)
+- Failure Modes table (at least 1 failure mode)
+
+Flag as MAJOR if §8 is missing entirely. Flag as MINOR if §8 exists but has empty tables.
+
 Record PASS/FAIL/WARN for each check.
 
 ## Phase 2: Test Coverage (Bash)
@@ -147,6 +155,7 @@ Produce a single report with this structure:
 | Placeholders | PASS/WARN | ... |
 | Non-Goals | PASS/WARN | ... |
 | Error handling | PASS/WARN | ... |
+| §8 Debugging | PASS/WARN | ... |
 
 ## Test Coverage
 | Spec Section | Status |
