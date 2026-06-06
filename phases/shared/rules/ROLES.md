@@ -6,16 +6,18 @@
 |-------------|------------------|----------|------|
 | Supervisor/Planner | Main Claude Code session | (interactive) | Main session |
 | Sprint-Manager | Main session running `/trio` skill | (interactive) | Main session |
+| Researcher | `/researcher` skill (main session) | (skill) | Main session skill |
 | Coder | `.claude/agents/coder.md` | `Agent(subagent_type="coder")` | Subagent |
+| Test-Manager | `.claude/agents/test-manager.md` | `Agent(subagent_type="test-manager")` | Subagent |
+| Tester | `.claude/agents/tester.md` | `Agent(subagent_type="tester")` | Subagent |
 | Reviewer-Lite | `.claude/agents/reviewer-lite.md` | `Agent(subagent_type="reviewer-lite")` | Subagent |
 | Reviewer | `.claude/agents/reviewer.md` | `Agent(subagent_type="reviewer")` | Subagent |
-| Test-Manager | `.claude/agents/test-manager.md` | `Agent(subagent_type="test-manager")` | Subagent |
 | BA | `.claude/agents/ba.md` | `Agent(subagent_type="ba")` | Subagent |
 | Architect | `.claude/agents/architect.md` | `Agent(subagent_type="architect")` | Subagent |
 | Explorer | `.claude/agents/explorer.md` | `Agent(subagent_type="explorer")` | Subagent |
 | Research-Critic | `.claude/agents/research-critic.md` | `Agent(subagent_type="research-critic")` | Subagent |
-| Researcher | `/researcher` skill (main session) | (skill) | Main session skill |
-| UI-Designer | `/ui-design` skill (main session) | (skill) | Main session skill |
+| UI-Designer | `.claude/agents/ui-designer.md` | `Agent(subagent_type="ui-designer")` | Subagent |
+| Data-Analyst | `.claude/agents/data-analyst.md` | `Agent(subagent_type="data-analyst")` | Subagent |
 
 Claude Code spawns in-process subagents via the `Agent()` tool. No daemon or multiplexer needed.
 
@@ -28,10 +30,13 @@ User
   └── Main Session (persistent)
         ├── [Planner mode] — spec writing, grill, plan derivation
         │     ├── BA (subagent — requirements gathering, complexity 6+)
-        │     └── Architect (subagent — system design, complexity 8+)
+        │     ├── Architect (subagent — system design, complexity 8+)
+        │     ├── UI-Designer (subagent — visual design loop, opus)
+        │     └── Data-Analyst (subagent — iterative data analysis, sonnet)
         │
         ├── [Sprint-Manager mode] — /trio skill orchestrates:
         │     ├── Test-Manager (subagent — owns RED gate)
+        │     ├── Tester (subagent — helper for test-manager)
         │     ├── Coder ×N (subagent, worktree-isolated — max 3 parallel per wave)
         │     ├── Reviewer-Lite (subagent — Tier 2, complexity 4-7)
         │     └── Reviewer (subagent — Tier 3, complexity 8+)
@@ -166,9 +171,12 @@ Design decisions need human judgment. Implementation doesn't. Separating them me
 |------|-----|--------|
 | Main Session (Planner) | BA | CONDITIONAL (complexity 6+ features) |
 | Main Session (Planner) | Architect | CONDITIONAL (complexity 8+ features) |
+| Main Session (Planner) | UI-Designer | CONDITIONAL (UI/visual features) |
+| Main Session (Planner) | Data-Analyst | CONDITIONAL (data analysis tasks) |
 | Main Session (Planner) | Test-Manager | ALWAYS (for RED gate) |
 | Main Session (Planner) | Coder | **NEVER** (Planner never spawns coders directly) |
 | Main Session (Sprint-Manager via /trio) | Coder | **ALWAYS** (max 3 parallel, no file overlap) |
+| Main Session (Sprint-Manager via /trio) | Tester | CONDITIONAL (test-manager needs help) |
 | Main Session (Sprint-Manager via /trio) | Reviewer-Lite | ALWAYS (Tier 2, complexity 4-7) |
 | Main Session (Sprint-Manager via /trio) | Reviewer | ALWAYS (Tier 3, complexity 8+) |
 | Main Session (Researcher via /researcher) | Explorer | ALWAYS (parallel, one per research angle) |
@@ -176,6 +184,9 @@ Design decisions need human judgment. Implementation doesn't. Separating them me
 | Test-Manager | Coder | NEVER |
 | BA | Anything | NEVER (leaf agent) |
 | Architect | Anything | NEVER (leaf agent) |
+| UI-Designer | Anything | NEVER (leaf agent) |
+| Data-Analyst | Anything | NEVER (leaf agent) |
+| Tester | Anything | NEVER (leaf agent) |
 
 ---
 

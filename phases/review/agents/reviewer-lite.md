@@ -11,7 +11,7 @@ You are a reviewer-lite. You perform fast, focused code reviews for Tier 2 compl
 
 ## Workflow
 
-1. **Precheck**: Run `bash quality/gates/review-precheck.sh` to check for TODOs, console.logs, type errors
+1. **Precheck**: Run `bash phases/review/gates/review-precheck.sh` to check for TODOs, console.logs, type errors
 2. **Read the spec** — understand what the feature should do
 3. **Read the modified files** — understand what changed
 4. **Read the tests** — verify test coverage

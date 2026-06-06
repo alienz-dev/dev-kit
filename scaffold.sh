@@ -293,8 +293,27 @@ cat > CLAUDE.md << EOF
 - Test all: \`npm test\`
 - Test single: \`npx vitest run tests/<path>\`
 
-## Workflow
-Spec-driven development (SDD). Read @AGENTS.md for full details.
+## Workflow (SDD — Spec-Driven Development)
+
+Features are built through a 3-phase lifecycle. **Do not skip phases.**
+
+### Phase 1: Design (interactive — user makes decisions)
+\`\`\`
+/grill <topic>       → Design interview (Q&A, explores design space)
+/ba-validate <spec>  → Validate spec quality
+/approve <spec>      → Approve spec for implementation
+\`\`\`
+
+### Phase 2: Implement (automatic — walk away)
+\`\`\`
+/sdd <feature>       → Full pipeline: plan → test → code → review → retro
+\`\`\`
+
+### Phase 3: Review (human — evaluate results)
+- Play with the feature, file issues if changes needed
+- Run /sdd again for fixes, /grill for design changes
+
+See @AGENTS.md for agent roles and coder workflow.
 
 ## Rules
 @.claude/rules/safety.md

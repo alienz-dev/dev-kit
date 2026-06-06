@@ -8,6 +8,8 @@ Defines every inter-role data exchange: what's passed, where it's written, what 
 |----------|------|--------|-------|----------|
 | Requirements doc | `specs/<id>-requirements.md` | Markdown with EARS criteria | BA | Planner |
 | Architecture doc | `specs/<id>-architecture.md` | Component diagram + ADRs | Architect | Planner |
+| Design spec | `DESIGN.md` | Component specs + layout + tokens | UI-Designer | Planner, Coder |
+| Analysis report | `plans/analysis-<topic>.md` | Markdown (findings + recommendation) | Data-Analyst | Planner |
 | Spec | `specs/SPEC-<id>.markdown` | SDD template (7 sections) | Planner | Test-Manager, Reviewer |
 | Plan | `plans/<id>-plan.md` | Wave decomposition | Planner | Sprint-Manager |
 | Test map | `.pipeline/test_map.json` | JSON (see format below) | Test-Manager | Sprint-Manager |
@@ -76,6 +78,63 @@ THE system SHALL <behavior>
 ```
 
 **Handoff mechanism:** Architect writes file, returns path to Planner. Planner incorporates into plan.
+
+---
+
+## Handoff 2b: UI-Designer → Planner
+
+**Trigger:** UI-Designer completes design loop
+**Artifact:** `DESIGN.md`
+**Format:**
+```markdown
+# Design: <feature-name>
+
+## Visual Direction
+<design rationale>
+
+## Component Specs
+### <component>
+- Layout/Tokens/States/Responsive
+
+## Layout
+<page-level layout>
+
+## Interactions
+<animation, transition specs>
+
+## Accessibility
+<contrast, focus, ARIA>
+```
+
+**Handoff mechanism:** UI-Designer returns text to caller. Main session writes to DESIGN.md.
+
+---
+
+## Handoff 2c: Data-Analyst → Planner
+
+**Trigger:** Data-Analyst completes analysis
+**Artifact:** `plans/analysis-<topic>.md`
+**Format:**
+```markdown
+# Analysis: <task-name>
+
+## Question
+<what was asked>
+
+## Method
+<how analysis was performed>
+
+## Findings
+<key results with data points>
+
+## Caveats
+<limitations, assumptions>
+
+## Recommendation
+<actionable next step>
+```
+
+**Handoff mechanism:** Data-Analyst returns text to caller. Main session writes to plans/.
 
 ---
 
