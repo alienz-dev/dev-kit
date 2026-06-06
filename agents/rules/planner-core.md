@@ -122,7 +122,7 @@ Full wave protocol: `agents/rules/wave-execution.md`
 - **Tests-as-contract** — `## Tests (Contract)` with failing tests, `## Test Map`. NO spec text in coder briefings.
 - **Non-Goals → `## Do NOT`** in coder briefings
 - **Invariants → `## Invariant Targets (Hidden Tests)`** in test-manager briefings
-- **Heuristic retrieval** — check past patterns before writing briefing
+- **Heuristic retrieval** — before writing any briefing, read `.agents/knowledge/heuristics.md` for applicable patterns. Check `applies-to` column for relevance to current task type (planning, implementation, review). Reference matching heuristics in the briefing.
 
 ### Post-Handoff Review
 - **Tier 1** (inline): complexity ≤3, config/docs only, <50 lines → read result, sanity check

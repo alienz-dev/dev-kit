@@ -1,26 +1,37 @@
 {
-  "stages": ["plan", "test", "sprint", "review", "done", "failed"],
+  "stages": ["plan", "test", "sprint", "review", "retro", "done", "failed"],
   "transitions": {
     "plan_ready": { "from": "plan", "to": "test" },
     "tests_ready": { "from": "test", "to": "sprint" },
     "sprint_complete": { "from": "sprint", "to": "review" },
-    "review_complete": { "from": "review", "to": "done" },
+    "review_complete": { "from": "review", "to": "retro" },
+    "retro_complete": { "from": "retro", "to": "done" },
     "stage_failed": { "from": "*", "to": "failed" },
     "retry_plan": { "from": "failed", "to": "plan" },
     "retry_test": { "from": "failed", "to": "test" },
     "retry_sprint": { "from": "failed", "to": "sprint" },
     "review_to_test": { "from": "review", "to": "test" },
-    "review_to_specced": { "from": "review", "to": "plan" }
+    "review_to_specced": { "from": "review", "to": "plan" },
+    "alignment_to_test": { "from": "sprint", "to": "test" },
+    "alignment_patch": { "from": "sprint", "to": "sprint" }
   },
   "gates": {
+    "test": {
+      "description": "Sub-gates within the test stage",
+      "sequence": ["ac_coverage"],
+      "checks": {
+        "ac_coverage": "All EARS acceptance criteria have at least one test"
+      }
+    },
     "sprint": {
       "description": "Sub-gates within the sprint stage (TRIO protocol)",
-      "sequence": ["green", "wiring", "visual", "hidden", "activation"],
+      "sequence": ["green", "wiring", "visual", "hidden", "alignment", "activation"],
       "checks": {
         "green": "All visible tests pass",
         "wiring": "Entry-reachability check passes (orphaned modules, dead imports)",
         "visual": "UI visual check passes (UI projects only, after changeset includes UI files)",
         "hidden": "Hidden regression tests pass (behavioral invariants, contract violations)",
+        "alignment": "Spec-to-code alignment check passes (spec-align ALIGNED or documented divergences)",
         "activation": "Feature reachable from entry point"
       }
     }

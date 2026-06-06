@@ -7,7 +7,7 @@ STATE_FILE=".pipeline/state.json"
 TRANSITIONS_FILE=".pipeline/transitions.json"
 
 usage() {
-  echo "Usage: gate.sh {init <feature>|advance <signal>|retreat <signal>|status|check <stage>}"
+  echo "Usage: gate.sh {init <feature>|advance <signal>|retreat <signal>|status|check <stage>|proof <gate-name> [message]}"
   exit 1
 }
 
@@ -114,6 +114,54 @@ validate_transition() {
   fi
 }
 
+# --- Sub-gate validation ---
+# Checks that required sub-gates have proof files before allowing stage advances.
+# Each gate writes .pipeline/gates/<name>.passed on success.
+
+validate_advance() {
+  local signal="$1"
+  local gates_dir=".pipeline/gates"
+
+  case "$signal" in
+    tests_ready)
+      # AC coverage gate: test_map.json must exist
+      if [ ! -f ".pipeline/test_map.json" ]; then
+        echo "BLOCKED: No test_map.json found. Test-manager must complete first." >&2
+        return 1
+      fi
+      # AC coverage proof file must exist
+      if [ ! -f "$gates_dir/ac_coverage.passed" ]; then
+        echo "BLOCKED: AC coverage gate not passed. Run spec-trace.sh first." >&2
+        echo "  Expected: $gates_dir/ac_coverage.passed" >&2
+        return 1
+      fi
+      ;;
+    sprint_complete)
+      # All sprint sub-gates must have proof files
+      local required_gates="green wiring hidden alignment activation"
+      for gate in $required_gates; do
+        if [ ! -f "$gates_dir/$gate.passed" ]; then
+          echo "BLOCKED: Sub-gate '$gate' not passed. Run the gate first." >&2
+          echo "  Expected: $gates_dir/$gate.passed" >&2
+          return 1
+        fi
+      done
+      ;;
+    review_complete)
+      # Review doesn't need proof files — reviewer output is the proof
+      ;;
+    retro_complete)
+      # Retro proof file must exist
+      if [ ! -f "$gates_dir/retro.passed" ]; then
+        echo "BLOCKED: Retro not completed. Run retro-runner.sh first." >&2
+        echo "  Expected: $gates_dir/retro.passed" >&2
+        return 1
+      fi
+      ;;
+  esac
+  return 0
+}
+
 # --- Commands ---
 
 cmd_init() {
@@ -133,6 +181,10 @@ cmd_init() {
 cmd_advance() {
   local signal="${1:?Usage: gate.sh advance <signal>}"
   lock_state
+
+  # Validate sub-gates before allowing advance
+  validate_advance "$signal" || exit 1
+
   local state current_stage new_stage now
   state=$(read_state)
   current_stage=$(get_field "$state" "stage")
@@ -229,6 +281,17 @@ cmd_check() {
   fi
 }
 
+cmd_proof() {
+  local gate_name="${1:?Usage: gate.sh proof <gate-name> [message]}"
+  local message="${2:-passed}"
+  local gates_dir=".pipeline/gates"
+  mkdir -p "$gates_dir"
+  local proof_file="$gates_dir/$gate_name.passed"
+  printf '{"passed":true,"at":"%s","gate":"%s","message":"%s"}\n' \
+    "$(date -Iseconds)" "$gate_name" "$message" > "$proof_file"
+  echo "Proof written: $proof_file"
+}
+
 # --- Dispatch ---
 case "${1}" in
   init)    shift; cmd_init "$@" ;;
@@ -236,5 +299,6 @@ case "${1}" in
   retreat) shift; cmd_retreat "$@" ;;
   status)  cmd_status ;;
   check)   shift; cmd_check "$@" ;;
+  proof)   shift; cmd_proof "$@" ;;
   *)       usage ;;
 esac

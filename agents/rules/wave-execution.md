@@ -33,6 +33,8 @@ After each wave completes and is verified, run a mini-retro (2 minutes):
 ## Wave N Retro
 - What worked: <list>
 - What broke: <list>
+- Alignment issues found: <list of misalignment types from alignment gate>
+- Patch waves needed: <count>
 - What to change in next wave: <list>
 - Go/No-Go for next wave: <decision>
 ```

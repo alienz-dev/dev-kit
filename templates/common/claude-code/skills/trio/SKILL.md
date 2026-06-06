@@ -31,11 +31,38 @@ For each wave:
 3. Merge worktree changes: `git merge` or cherry-pick each coder's worktree branch
 4. Run GREEN gate: `npm test` — all visible tests must pass
 5. If GREEN fails: re-dispatch failing coder with test output (max 3 retries per wave)
+6. **Write GREEN proof** (required for gate.sh to allow advancing):
+   ```bash
+   bash workflow/pipeline/gate.sh proof green "all visible tests pass"
+   ```
 
 ### Post-Wave Gates (after all waves)
-6. Hidden gate: run tests from `tests/hidden/` — all must pass
-7. If hidden fail: promote failing hidden test to `tests/unit/`, re-dispatch coder
-8. Advance: `bash workflow/pipeline/gate.sh advance sprint_complete`
+7. Hidden gate: run tests from `tests/hidden/` — all must pass
+8. If hidden fail: promote failing hidden test to `tests/unit/`, re-dispatch coder
+9. **Write hidden proof** (required for gate.sh to allow advancing):
+   ```bash
+   bash workflow/pipeline/gate.sh proof hidden "hidden regression tests pass"
+   ```
+10. **Alignment gate**: verify spec-to-code alignment
+    ```bash
+    bash workflow/pipeline/alignment-gate.sh "$SPEC_FILE"
+    ```
+    - Exit 0 (ALIGNED) → proceed (proof file written automatically by alignment-gate.sh)
+    - Exit 2 (TEST GAPS) → re-dispatch test-manager with uncovered ACs
+    - Exit 3 (CODE ISSUES) → dispatch patch wave (see below)
+    - Exit 4 (SPEC AMBIGUITY) → flag for user
+11. **Patch wave** (if alignment gate returns 3):
+    - Write scoped patch briefing with specific AC text + file:line
+    - Spawn coder with patch briefing (info barrier relaxed for this AC only)
+    - Re-run alignment gate after patch (max 2 patch waves)
+12. **Write wiring + activation proofs** (run the checks, then write proofs):
+    ```bash
+    # Wiring check: verify no orphaned modules, dead imports
+    bash workflow/pipeline/gate.sh proof wiring "entry-reachability check passed"
+    # Activation check: verify feature reachable from entry point
+    bash workflow/pipeline/gate.sh proof activation "feature reachable from entry point"
+    ```
+13. Advance: `bash workflow/pipeline/gate.sh advance sprint_complete`
 
 ## Phase 3: Observe (REVIEW)
 1. Spawn reviewer subagent with: spec path + list of modified source files

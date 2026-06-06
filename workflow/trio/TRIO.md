@@ -51,7 +51,8 @@ The sprint stage contains sub-gates defined in the `gates.sprint` object of
 | green | wiring_verified | Entry-reachability check passes | Automated (wiring gate) |
 | wiring_verified | visual_verified | UI visual check passes (UI only) | Automated (visual gate) |
 | visual_verified | hidden_verified | Hidden regression tests pass | Automated (hidden gate) |
-| hidden_verified | activation_verified | Activation gate passes | Automated |
+| hidden_verified | alignment_verified | Spec-to-code alignment check passes | Automated (alignment gate) |
+| alignment_verified | activation_verified | Activation gate passes | Automated |
 | activation_verified | reviewing | Reviewer spawned | Sprint-manager |
 | reviewing | closed | Reviewer approves | Reviewer |
 
@@ -63,7 +64,7 @@ trio-preflight.sh → [coder dispatch] → GREEN → wiring → visual → quali
 
 After all waves complete:
 ```
-hidden → activation → review
+hidden → alignment → activation → review
 ```
 
 ### Visual Gate (UI projects only)
@@ -92,6 +93,36 @@ The composed gate runs three layers:
 | reviewing → red_verified | New tests needed (reviewer found gap) |
 | green → implementing | Hidden regression tests failed |
 | implementing → tests_written | Approach fundamentally wrong |
+| alignment → implementing | Patch wave needed (code divergence) |
+| alignment → tests_written | Test gap found (missing AC coverage) |
+
+## Patch Waves
+
+A patch wave is a targeted fix for alignment issues found by the alignment gate.
+Unlike a full re-dispatch, a patch wave is scoped to specific files and ACs.
+
+### When to use
+- Alignment gate reports DIVERGENT/UNIMPLEMENTED for 1-3 files
+- Code structure is sound, one behavior is wrong
+- Under-implementation of a single AC
+
+### When NOT to use (use full re-dispatch)
+- Fundamental approach wrong (implementing→tests_written)
+- Multiple interdependent files with cascading changes
+- Spec ambiguity requires re-interpretation (need new tests first)
+
+### Patch Briefing
+The patch briefing RELAXES the information barrier for the specific divergent AC only:
+- Includes the specific AC text (not the full spec)
+- Includes file:line of the divergence
+- Includes expected behavior (quoted from spec)
+- All other files are read-only
+- Coder sees: "Fix src/foo.ts:42 to return 422 instead of 400 per AC-3"
+
+### Limits
+- Max 2 patch waves per alignment issue
+- After 2 failed patch waves → full re-dispatch
+- After full re-dispatch fails → report failure, ask user
 
 ## Failure Handling
 

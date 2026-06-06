@@ -31,6 +31,13 @@ case "$agent_type" in
     ;;
 esac
 
+# --- Check for patch wave exception ---
+# Patch wave briefings legitimately contain specific AC text for targeted fixes
+patch_wave=0
+if echo "$prompt" | grep -qiE 'PATCH.WAVE|patch.briefing|alignment.*divergen|alignment.*report|alignment-gate'; then
+  patch_wave=1
+fi
+
 # --- Check for spec leakage ---
 # If the briefing contains acceptance criteria or spec IDs, the barrier leaked
 spec_leak=0
@@ -54,12 +61,14 @@ fi
 
 # --- Enforcement ---
 
-# BLOCK: Spec leakage regardless of test scripts
-# The barrier is: coders never see the spec, period
-if [ "$spec_leak" -eq 1 ]; then
+# BLOCK: Spec leakage — but allow patch wave briefings
+# Patch waves legitimately need specific AC text for targeted fixes
+if [ "$spec_leak" -eq 1 ] && [ "$patch_wave" -eq 0 ]; then
   echo "BRIEFING ERROR: Contains spec/AC references." >&2
   echo "The information barrier requires: coders receive test scripts, not specs." >&2
   echo "Fix: Remove spec text. Use test scripts with expected outputs only." >&2
+  echo "Exception: Patch wave briefings may contain specific AC text." >&2
+  echo "  Mark patch briefings with 'PATCH WAVE' header." >&2
   exit 2
 fi
 

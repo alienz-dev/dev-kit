@@ -10,6 +10,7 @@ Lessons learned in agent sessions are lost. Errors repeat. Patterns aren't captu
 - User says "retro" at session end
 - Automated: after every session >30 turns
 - Scheduled: daily batch extraction
+- **SDD integration:** Lightweight retro runs automatically as Phase 5.5 of the SDD pipeline (`bash workflow/pipeline/retro-runner.sh <feature> --lightweight`). Full retro runs as Phase 5.6 only when complexity >= 8 or retries >= 2.
 
 ### 2. Extract (from conversation transcript)
 

@@ -114,11 +114,20 @@ Agent({
 After test-manager returns:
 
 1. Verify `.pipeline/test_map.json` exists
-2. Run tests to confirm RED:
+2. **Check AC coverage** — verify every EARS acceptance criterion has at least one test:
+```bash
+bash tools/spec-trace.sh tests/ specs/
+```
+If uncovered sections found: re-dispatch test-manager with the uncovered list. Only proceed when all sections are covered.
+3. **Write AC coverage proof** (required for gate.sh to allow advancing):
+```bash
+bash workflow/pipeline/gate.sh proof ac_coverage "all sections covered"
+```
+4. Run tests to confirm RED:
 ```bash
 npm test 2>&1 | tail -5
 ```
-3. All tests should fail. If any pass, the test-manager wrote tests for existing behavior (wrong).
+5. All tests should fail. If any pass, the test-manager wrote tests for existing behavior (wrong).
 
 Advance pipeline:
 ```bash
@@ -156,10 +165,29 @@ After /trio completes, read the pipeline state:
 bash workflow/pipeline/gate.sh status
 ```
 
+**Run alignment gate** — verify spec-to-code alignment before review:
+```bash
+bash workflow/pipeline/alignment-gate.sh "$SPEC_FILE"
+```
+
+Exit code handling:
+- **0 (ALIGNED)** → proceed to review
+- **2 (TEST GAPS)** → re-dispatch test-manager with uncovered ACs, re-run sprint
+- **3 (CODE ISSUES)** → dispatch patch wave (see below)
+- **4 (SPEC AMBIGUITY)** → flag for user, do not proceed automatically
+
+**Patch wave** (if alignment gate returns 3):
+1. Read the alignment report for specific divergences (file:line, expected behavior)
+2. Write a scoped patch briefing (includes the specific AC text — info barrier relaxation for this AC only)
+3. Spawn coder with patch briefing (max 2 patch waves per issue)
+4. Re-run alignment gate after patch
+5. If still divergent after 2 patch waves → full re-dispatch
+
 Report:
 ```
 Implementation: complete (via /trio)
   Pipeline stage: <stage>
+  Alignment: <ALIGNED|PATCHED|DIVERGENT>
 ```
 
 ---
@@ -172,27 +200,27 @@ Determine reviewer tier from complexity:
 - Auto-promote to full if paths match: /auth/, /security/, /crypto/, /api/, /schema/, /migration
 
 ### Multi-Perspective Review (complexity 8+)
-Spawn 3 reviewers in parallel with different focus:
+Spawn 3 reviewers in parallel with different focus. Include the alignment report from Checkpoint C in each reviewer's prompt so they validate pre-found divergences rather than discovering from scratch.
 
 ```
 # Security reviewer
 Agent({
   subagent_type: "reviewer",
-  prompt: "Review for SECURITY issues only.\nSpec: <SPEC_FILE>\nModified files: <list>\n\nFocus: injection, auth bypass, data leaks, input validation, secrets handling.\nIgnore style, naming, minor issues.\nVerdict: APPROVE | REQUEST_CHANGES",
+  prompt: "Review for SECURITY issues only.\nSpec: <SPEC_FILE>\nModified files: <list>\nAlignment report: <ALIGNMENT_REPORT>\n\nFocus: injection, auth bypass, data leaks, input validation, secrets handling.\nValidate any security-related divergences from the alignment report.\nIgnore style, naming, minor issues.\nVerdict: APPROVE | REQUEST_CHANGES",
   model: "sonnet"
 })
 
 # Correctness reviewer
 Agent({
   subagent_type: "reviewer",
-  prompt: "Review for CORRECTNESS issues only.\nSpec: <SPEC_FILE>\nModified files: <list>\n\nFocus: logic errors, edge cases, error handling, off-by-one, null handling.\nIgnore style, naming, minor issues.\nVerdict: APPROVE | REQUEST_CHANGES",
+  prompt: "Review for CORRECTNESS issues only.\nSpec: <SPEC_FILE>\nModified files: <list>\nAlignment report: <ALIGNMENT_REPORT>\n\nFocus: logic errors, edge cases, error handling, off-by-one, null handling.\nValidate any correctness-related divergences from the alignment report.\nIgnore style, naming, minor issues.\nVerdict: APPROVE | REQUEST_CHANGES",
   model: "sonnet"
 })
 
 # Performance reviewer
 Agent({
   subagent_type: "reviewer",
-  prompt: "Review for PERFORMANCE issues only.\nSpec: <SPEC_FILE>\nModified files: <list>\n\nFocus: N+1 queries, missing indexes, unnecessary allocations, blocking I/O.\nIgnore style, naming, minor issues.\nVerdict: APPROVE | REQUEST_CHANGES",
+  prompt: "Review for PERFORMANCE issues only.\nSpec: <SPEC_FILE>\nModified files: <list>\nAlignment report: <ALIGNMENT_REPORT>\n\nFocus: N+1 queries, missing indexes, unnecessary allocations, blocking I/O.\nValidate any performance-related divergences from the alignment report.\nIgnore style, naming, minor issues.\nVerdict: APPROVE | REQUEST_CHANGES",
   model: "sonnet"
 })
 ```
@@ -202,11 +230,11 @@ Aggregate verdicts:
 - All APPROVE → APPROVE
 
 ### Single Reviewer (complexity 4-7)
-Spawn reviewer-lite (adversarial):
+Spawn reviewer-lite (adversarial). Include alignment report:
 ```
 Agent({
   subagent_type: "reviewer-lite",
-  prompt: "Review changes for <feature>. Be adversarial — try to find bugs, not validate.\nSpec: <SPEC_FILE>\nModified files: <list>\n\nCheck: edge cases, error paths, security, concurrency.\nVerdict: APPROVE | APPROVE_WITH_COMMENTS | REQUEST_CHANGES",
+  prompt: "Review changes for <feature>. Be adversarial — try to find bugs, not validate.\nSpec: <SPEC_FILE>\nModified files: <list>\nAlignment report: <ALIGNMENT_REPORT>\n\nCheck: edge cases, error paths, security, concurrency.\nValidate any divergences from the alignment report.\nVerdict: APPROVE | APPROVE_WITH_COMMENTS | REQUEST_CHANGES",
   model: "sonnet"
 })
 ```
@@ -235,15 +263,74 @@ Review: <verdict>
 
 ## Phase 5: Done
 
-Update pipeline:
+Update pipeline (advances to retro stage, not done):
 ```bash
-bash workflow/pipeline/gate.sh advance review_complete  # if not already done
+bash workflow/pipeline/gate.sh advance review_complete
 ```
 
 Write checkpoint:
 ```bash
 bash workflow/pipeline/checkpoint.sh done '{"feature":"'$ARGUMENTS'","status":"complete","timestamp":"'$(date -Iseconds)'"}'
 ```
+
+---
+
+## Phase 5.5: Retro (Lightweight, Automatic, Mandatory)
+
+Pipeline is now at the `retro` stage. This phase is **mandatory** — the pipeline cannot advance to `done` without it.
+
+### Step 1: Extract retro from pipeline artifacts
+```bash
+bash workflow/pipeline/retro-runner.sh "$ARGUMENTS" --lightweight
+```
+This reads `.pipeline/state.json`, checkpoints, and git log to produce a retro skeleton at `workflow/retro/YYYY-MM-DD-<feature>.md`.
+
+### Step 2: Read the generated retro file
+Read the retro file. Review the auto-extracted metrics and findings.
+
+### Step 3: Classify findings
+For each finding, classify into one of three types:
+
+| Type | Definition | Action |
+|------|-----------|--------|
+| **Heuristic** | Process/agent behavior fix | Write to `.agents/knowledge/heuristics/HW-NNN.md`, add to index |
+| **Issue** | Code/tooling bug | `issue open "..." --project <slug> --type bug --severity P2 --tags "retro"` |
+| **Drop** | One-off, already known, too generic | Note in retro file, no further action |
+
+### Step 4: Execute actions
+- Heuristics: create individual file in `.agents/knowledge/heuristics/`, update `.agents/knowledge/heuristics.md` index
+- Issues: file via `issue open` CLI
+- Drops: note in retro file's Classifications table
+
+### Step 5: Update retro file
+Fill in the Classifications table and Forward Plan section of the retro file.
+
+### Step 6: Write retro proof and advance to done
+```bash
+bash workflow/pipeline/gate.sh proof retro "lightweight retro complete"
+bash workflow/pipeline/gate.sh advance retro_complete
+```
+
+---
+
+## Phase 5.6: Full Retro (Conditional)
+
+**Only runs if ANY of these conditions are met:**
+- Feature complexity >= 8
+- More than 2 retries occurred across any gate (check `.pipeline/state.json` backward transitions)
+- User explicitly requests full retro
+- Session touched multiple features
+
+If conditions are met, run the full retro protocol from `workflow/retro/RETRO.md`:
+1. Deep conversation analysis — extract errors, corrections, decisions, dead ends
+2. Full classification table with evidence
+3. Heuristic creation with detailed Pattern/Evidence/Application/Anti-Pattern sections
+4. Forward plan with specific next actions
+5. Route outputs: hot memory, project knowledge, workspace state, issue tracker
+
+If conditions are NOT met, skip — the lightweight retro from Phase 5.5 is sufficient.
+
+---
 
 Final report:
 ```
@@ -255,6 +342,9 @@ Plan:        plans/<feature>-plan.md
 Files:       <N> modified
 Tests:       <N>/<N> passing
 Review:      <verdict>
+Alignment:   <ALIGNED|PATCHED|DIVERGENT>
+Retro:       workflow/retro/<date>-<feature>.md
+Heuristics:  <N> new | <N> updated
 Pipeline:    done
 
 Next steps:
