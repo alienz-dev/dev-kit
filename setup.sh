@@ -160,7 +160,7 @@ if [ -f "$SCRIPT_DIR/.gitmodules" ]; then
   if [ "$UNINITED" -gt 0 ]; then
     echo "  Initializing $UNINITED submodule(s)..."
     git -C "$SCRIPT_DIR" submodule update --init 2>/dev/null && ok "Submodules initialized" || {
-      fail "Submodule init failed (Bitbucket access required)"
+      fail "Submodule init failed (GitHub access required)"
       need "git submodule update --init"
     }
   else
@@ -183,7 +183,7 @@ if [ -d "$SCRIPT_DIR/tools/issue-cli" ] && [ -f "$SCRIPT_DIR/tools/issue-cli/pac
   }
   cd "$SCRIPT_DIR"
 else
-  echo "  (issue-cli not available — submodule may need Bitbucket access)"
+  echo "  (issue-cli not available — submodule may need GitHub access)"
 fi
 fi # end MODE != minimal
 

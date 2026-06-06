@@ -34,7 +34,7 @@ WHEN a gate script runs THE system SHALL print a human-readable pass/fail messag
 with the gate name.
 
 **AC-4: Visual Gate Marked as Optional (Unwanted)**
-WHILE the visual gate requires the Bitbucket submodule THE system SHALL NOT require it
+WHILE the visual gate requires the ui-visual-check submodule THE system SHALL NOT require it
 for non-UI projects.
 
 **AC-5: Wiring Gate Simplified (Ubiquitous)**

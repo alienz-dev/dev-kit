@@ -55,7 +55,7 @@ instead of hardcoding them. Issue lifecycle and pipeline stages should be the sa
 Five documented gate scripts don't exist:
 
 - `entry-reachability.sh` (wiring gate)
-- `ui-visual-check.sh` (visual gate — depends on Bitbucket submodule)
+- `ui-visual-check.sh` (visual gate — depends on ui-visual-check submodule)
 - `wave-smoke.sh` (per-wave smoke test)
 - `activation-gate.sh` (activation gate)
 - `review-precheck.sh` (review pre-check)
@@ -64,7 +64,7 @@ Five documented gate scripts don't exist:
 non-GREEN gate. Agents can't distinguish "gate I need to run" from "gate that doesn't exist."
 
 **Fix:** Either implement the missing scripts or simplify the gate sequence to what actually runs.
-Mark the visual gate as requiring the Bitbucket submodule.
+Mark the visual gate as requiring the ui-visual-check submodule.
 
 ### 2.3 No Daemon Despite Claims — MEDIUM SEVERITY
 

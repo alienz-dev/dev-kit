@@ -560,7 +560,7 @@ Every role has a **contract** defining its boundaries:
 
 ### Data-Analyst
 
-**Purpose:** Autonomous iterative data analysis. Wraps `~/projects/data-analyst-agent/run.py`.
+**Purpose:** Autonomous iterative data analysis. Wraps an external analysis script (configurable via env var).
 
 **Model:** sonnet
 
