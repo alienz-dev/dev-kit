@@ -23,6 +23,25 @@
      └───────────────────────────────────────────────────┘
 ```
 
+### Workflow-Based Orchestration (Alternative)
+
+For automated phases, the toolkit uses Claude Code's dynamic workflows:
+
+```
+/sdd skill (interactive orchestrator)
+  ├── Phase 1: Pre-flight          → skill
+  ├── Phase 2: Plan derivation     → skill
+  ├── Phase 3: Test generation     → WORKFLOW: sdd-test-gen
+  ├── Phase 4: Implementation      → skill delegates to /trio
+  │     └── /trio → WORKFLOW: wave-dispatch
+  ├── Phase 5: Review              → WORKFLOW: sdd-review
+  └── Phase 6: Retro               → WORKFLOW: sdd-retro
+```
+
+Key difference: orchestration logic lives in a JavaScript script, not in Claude's
+context window. Intermediate results stay in script variables. The runtime handles
+concurrency, worktree isolation, and resumability.
+
 ## Data Flow: Feature Implementation
 
 ```
@@ -65,6 +84,17 @@
 // Spawn with background tracking
 Agent({ prompt: "task", run_in_background: true })
 // Completion arrives as a notification in the session
+```
+
+### Workflow Scripts
+```javascript
+phase('Title')                          // UI grouping
+log('message')                          // progress
+await agent(prompt, opts)               // spawn worker
+await parallel([fn1, fn2])              // barrier
+await pipeline(items, stage1, stage2)   // streaming
+args                                    // input (parse with JSON.parse)
+budget.total / budget.spent / budget.remaining  // token tracking
 ```
 
 ### Result Files

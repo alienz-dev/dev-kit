@@ -6,7 +6,7 @@
 ```bash
 #!/bin/bash
 # Runs affected tests on commit (fail-closed, 60s timeout)
-# See quality/pre-commit/pre-commit-test-gate.sh
+# See phases/review/gates/ for gate scripts
 ```
 
 ### Visual Check (UI projects)

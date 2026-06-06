@@ -79,54 +79,54 @@ See [docs/DEGRADED-MODE.md](docs/DEGRADED-MODE.md) for details on the 3 levels.
 ```
 dev-kit/
 ├── README.md
+├── CLAUDE.md                   # Project instructions for Claude Code
 ├── setup.sh                    # Machine bootstrap (idempotent)
 ├── scaffold.sh                 # New project generator
-├── PLAN.md                     # Detailed roadmap
+├── sync.sh                     # Re-sync base files into scaffolded projects
+│
+├── .claude/                    # Claude Code project config
+│   ├── settings.json           # Permissions
+│   ├── commands/               # Slash commands (/scaffold, /setup, /test-gates)
+│   └── workflows/              # Workflow scripts (adversarial-review, wave-implement, etc.)
+│
+├── phases/                     # Agent configs organized by development phase
+│   ├── design/                 # Phase 1: Design (interactive)
+│   │   ├── agents/             # BA, Architect, Researcher, Explorer, Research-Critic
+│   │   ├── rules/              # grill-checklist
+│   │   └── skills/             # grill, ba-validate, approve, spec-align
+│   ├── implement/              # Phase 2+3: Test + Implement (automated)
+│   │   ├── agents/             # Coder, Test-Manager, Tester
+│   │   ├── rules/              # coder-safety, wave-execution, implementation-briefing
+│   │   ├── skills/             # sdd (orchestrator), coder-safety, trio (alias)
+│   │   └── hooks/              # block-spec-read, check-briefing
+│   ├── review/                 # Phase 4: Review (automated)
+│   │   ├── agents/             # Reviewer, Reviewer-Lite
+│   │   └── gates/              # 8 gate scripts + __tests__/
+│   └── shared/                 # Cross-cutting (all phases)
+│       ├── rules/              # client_rules, CONSOLIDATED, HANDOFF, ROLES, complexity-scoring
+│       ├── hooks/              # block-dangerous, check-spec-approval, verify-tests
+│       ├── skills/             # compaction-strategy, testing-patterns, typescript-patterns
+│       └── context-files/      # session-routing, user-profile
 │
 ├── core/                       # Core infrastructure
 │   └── coding-agent/           # Agent CLI integration adapters
 │
-├── workflow/                    # Development methodology
-│   ├── sdd/                    # Spec-Driven Development (EARS notation)
-│   ├── trio/                   # TRIO protocol (Test-Red-Implement-Observe)
-│   ├── pipeline/               # File-based pipeline FSM (gate.sh)
-│   ├── grill/                  # Spec interrogation sessions
-│   ├── issue-lifecycle/        # Issue states, transitions, CLI
-│   └── retro/                  # Session retrospective extraction
+├── docs/                       # Documentation
+│   ├── ARCHITECTURE.md
+│   ├── USER-GUIDE.md
+│   ├── TROUBLESHOOTING.md
+│   └── archive/                # Archived: PLAN.md, TRIO.md, foundation-fixes specs
 │
-├── agents/                     # Agent definitions and roles
-│   ├── roles/                  # 12 roles: supervisor, sprint-manager, coder, ui-designer, etc.
-│   ├── rules/                  # Safety rules, coding conventions
-│   ├── knowledge/              # Per-project knowledge templates
-│   ├── context-files/          # Context injection templates
-│   └── hooks/                  # Agent spawn hooks, context injection
+├── infra/scripts/              # Utility scripts (env-detect, hot-memory, start/stop)
+├── issues/                     # Issue tracking (markdown) + templates
+├── specs/                      # Feature specs and implementation plans
+├── templates/                  # Project templates (lefthook, AGENTS.md.template, visual-testing)
+├── tools/                      # Standalone tooling (issue-cli, ui-visual-check, explainer)
 │
-├── quality/                    # Quality gates
-│   ├── gates/                  # Gate scripts (visual-regression, accessibility, etc.)
-│   ├── ui-visual-check/        # VISUAL gate spec and DESIGN.md template
-│   ├── review/                 # Tiered review system (3 tiers)
-│   ├── pre-commit/             # Test gate, typecheck, lint
-│   └── regression/             # Regression test patterns
-│
-├── tools/                      # Specialized tooling
-│   ├── data-analyst/           # Iterative analysis agent (sandboxed)
-│   ├── explainer/              # Marketing page generator
-│   └── issue-cli/              # Issue tracking CLI (submodule)
-│
-├── templates/                  # Project templates
-│   ├── common/                 # Shared: lefthook, agent rules, skills
-│   └── typescript-web/         # Web-specific: visual checks, design tokens
-│
-├── infra/                      # System services
-│   ├── systemd/                # Service units
-│   ├── scripts/                # Utility scripts (start-server, stop-server, etc.)
-│   └── state/                  # Hot-memory, workspace state, memo templates
-│
-└── docs/                       # Documentation
-    ├── ARCHITECTURE.md         # How the pieces fit together
-    ├── CONVENTIONS.md          # Coding standards for AI-assisted dev
-    ├── TROUBLESHOOTING.md      # Common failure modes and fixes
-    └── FRESH-MACHINE.md        # Complete setup from zero
+└── workflow/                   # Process docs + pipeline FSM
+    ├── sdd/                    # SDD methodology (absorbs TRIO), spec tools
+    ├── pipeline/               # gate.sh, transitions.json, checkpoint.sh
+    └── dynamic-workflows-analysis.md
 ```
 
 ## Agent Hierarchy
@@ -145,6 +145,17 @@ User
               └── Reviewer (Tier 3)
 ```
 
+### Workflow Orchestration
+
+In addition to subagent-based orchestration, the toolkit supports Claude Code's
+dynamic workflows for automated phases. The hybrid model uses:
+- **Skills** for interactive phases (grill, approval, spec review)
+- **Workflows** for automated phases (test gen, coder dispatch, review, retro)
+- **gate.sh** for filesystem enforcement (proof files, state transitions)
+- **Hooks** for git enforcement (pre-commit checks)
+
+See `workflow/dynamic-workflows-guide.md` for the complete guide.
+
 ## Pipeline (gate.sh + lefthook)
 
 ```
@@ -153,6 +164,9 @@ plan → test → sprint → review → done | failed
 
 Gates per wave: `trio-preflight → GREEN → wiring → visual → wave-smoke`
 After all waves: `hidden → activation → review`
+
+> **Dynamic Workflows**: The sprint stage can be driven by the `wave-dispatch` workflow
+> for automated parallel coder dispatch. See `workflow/dynamic-workflows-guide.md`.
 
 ## SDD Commands (Claude Code Skills)
 
@@ -168,6 +182,13 @@ The SDD system runs in three phases: **Design** (interactive) → **Implementati
 | `/sdd resume <feature>` | Implementation | Resume failed pipeline from current stage |
 | `/spec-align <spec>` | Maintenance | Compare spec vs code, find divergences |
 | `/researcher <question>` | Research | Deep investigation (parallel explorers) |
+| `ultracode: <task>` | Workflow | Trigger a dynamic workflow for a specific task |
+| `/adversarial-review` | Workflow | Multi-angle code review with adversarial verification |
+| `/wave-implement` | Workflow | TRIO-style wave dispatch with worktree isolation |
+| `/deep-audit` | Workflow | Comprehensive codebase audit |
+| `/research-crosscheck` | Workflow | Multi-angle research with cross-checked sources |
+| `/migration-sweep` | Workflow | Codebase-wide migration pipeline |
+| `/sdd-implement` | Workflow | Full SDD implementation via workflows |
 
 ### Workflow
 

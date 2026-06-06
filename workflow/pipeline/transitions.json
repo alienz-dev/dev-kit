@@ -24,7 +24,7 @@
       }
     },
     "sprint": {
-      "description": "Sub-gates within the sprint stage (TRIO protocol)",
+      "description": "Sub-gates within the sprint stage (SDD implementation protocol)",
       "sequence": ["green", "wiring", "visual", "hidden", "alignment", "activation"],
       "checks": {
         "green": "All visible tests pass",

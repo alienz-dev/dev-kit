@@ -128,32 +128,26 @@ cat > .agents/knowledge/project.md << EOF
 
 ## Key Patterns
 - Spec-driven development (SDD)
-- TRIO protocol (Test → Red → Implement → Observe)
+- Spec-driven development with implementation protocol (wave dispatch, gate sequence)
 - File-based issue tracking
 EOF
 
 cat > .agents/knowledge/workflow.md << EOF
-# Workflow: Spec-Driven TDD
+# Workflow: Spec-Driven Development (SDD)
 
-## Issue Lifecycle
-open → specced → tests_written → red_verified → implementing → green → reviewing → closed
+## Pipeline Stages
+plan → test → sprint → review → retro → done | failed
 
-## Gate Requirements
-| From | To | Gate |
-|------|----|------|
-| open | specced | Spec file exists and is linked |
-| specced | tests_written | Test files exist with assertions |
-| tests_written | red_verified | All tests fail (RED) |
-| red_verified | implementing | Coder assigned |
-| implementing | green | All visible tests pass |
-| green | reviewing | Reviewer assigned |
-| reviewing | closed | Approved AND hidden tests pass |
+## Sprint Sub-Gates
+green → wiring → visual → hidden → alignment → activation
 
 ## Roles
 - Supervisor: orchestrate, never write code
-- Test-manager: own RED→GREEN cycle (persistent)
+- Test-manager: own RED gate (persistent)
 - Coder: make tests pass (ephemeral, never sees spec)
 - Reviewer: verify spec intent (ephemeral)
+
+See .pipeline/transitions.json for the canonical state machine.
 EOF
 
 cat > .agents/constitution.yml << EOF
@@ -203,7 +197,6 @@ cp "$SCRIPT_DIR/workflow/sdd/SDD.md" specs/SDD.md
 # --- Copy tools reference ---
 mkdir -p .tools
 cp "$SCRIPT_DIR/workflow/grill/GRILL.md" .tools/GRILL.md 2>/dev/null || true
-cp "$SCRIPT_DIR/workflow/trio/TRIO.md" .tools/TRIO.md 2>/dev/null || true
 
 cat > specs/README.md << EOF
 # Specifications
@@ -258,7 +251,7 @@ Write first feature spec in specs/
 ## Priority Order
 1. Define first feature as spec
 2. Create issue linking to spec
-3. Begin TRIO cycle
+3. Begin SDD cycle
 EOF
 
 cat > CONTEXT.md << EOF
@@ -301,7 +294,7 @@ cat > CLAUDE.md << EOF
 - Test single: \`npx vitest run tests/<path>\`
 
 ## Workflow
-Spec-driven TDD with TRIO protocol. Read @AGENTS.md for full details.
+Spec-driven development (SDD). Read @AGENTS.md for full details.
 
 ## Rules
 @.claude/rules/safety.md
@@ -321,10 +314,11 @@ EOF
 mkdir -p .claude/{agents,rules,skills,hooks}
 
 # --- .claude/hooks/ ---
-cp "$SCRIPT_DIR/templates/common/claude-code/hooks/block-dangerous.sh" .claude/hooks/block-dangerous.sh
-cp "$SCRIPT_DIR/templates/common/claude-code/hooks/verify-tests.sh" .claude/hooks/verify-tests.sh
-cp "$SCRIPT_DIR/templates/common/claude-code/hooks/check-briefing.sh" .claude/hooks/check-briefing.sh
-chmod +x .claude/hooks/block-dangerous.sh .claude/hooks/verify-tests.sh .claude/hooks/check-briefing.sh
+cp "$SCRIPT_DIR/phases/shared/hooks/block-dangerous.sh" .claude/hooks/block-dangerous.sh
+cp "$SCRIPT_DIR/phases/shared/hooks/verify-tests.sh" .claude/hooks/verify-tests.sh
+cp "$SCRIPT_DIR/phases/implement/hooks/check-briefing.sh" .claude/hooks/check-briefing.sh
+cp "$SCRIPT_DIR/phases/implement/hooks/block-spec-read.sh" .claude/hooks/block-spec-read.sh
+chmod +x .claude/hooks/block-dangerous.sh .claude/hooks/verify-tests.sh .claude/hooks/check-briefing.sh .claude/hooks/block-spec-read.sh
 
 # --- .claude/settings.json ---
 cat > .claude/settings.json << EOF
@@ -352,6 +346,15 @@ cat > .claude/settings.json << EOF
             "command": "bash .claude/hooks/check-briefing.sh"
           }
         ]
+      },
+      {
+        "matcher": "Read",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/block-spec-read.sh"
+          }
+        ]
       }
     ],
     "Stop": [
@@ -374,29 +377,54 @@ cat > .claude/settings.json << EOF
 EOF
 
 # --- .claude/agents/ ---
-if [ -d "$SCRIPT_DIR/templates/common/claude-code/agents" ]; then
-  cp "$SCRIPT_DIR/templates/common/claude-code/agents/"*.md .claude/agents/ 2>/dev/null || true
-fi
+for phase_dir in design implement review; do
+  if [ -d "$SCRIPT_DIR/phases/$phase_dir/agents" ]; then
+    cp "$SCRIPT_DIR/phases/$phase_dir/agents/"*.md .claude/agents/ 2>/dev/null || true
+  fi
+done
 
 # --- .claude/rules/ ---
-if [ -d "$SCRIPT_DIR/templates/common/claude-code/rules" ]; then
-  cp "$SCRIPT_DIR/templates/common/claude-code/rules/"*.md .claude/rules/ 2>/dev/null || true
-fi
-
-# --- Copy consolidated governance rules ---
-if [ -f "$SCRIPT_DIR/agents/rules/CONSOLIDATED.md" ]; then
-  cp "$SCRIPT_DIR/agents/rules/CONSOLIDATED.md" .claude/rules/CONSOLIDATED.md
-fi
-
-# --- Copy skills ---
-if [ -d "$SCRIPT_DIR/agents/skills" ]; then
-  cp "$SCRIPT_DIR/agents/skills/"*.md .claude/skills/ 2>/dev/null || true
-fi
+for phase_dir in design implement review shared; do
+  if [ -d "$SCRIPT_DIR/phases/$phase_dir/rules" ]; then
+    cp "$SCRIPT_DIR/phases/$phase_dir/rules/"*.md .claude/rules/ 2>/dev/null || true
+  fi
+done
 
 # --- .claude/skills/ ---
-if [ -d "$SCRIPT_DIR/templates/common/claude-code/skills" ]; then
-  cp -r "$SCRIPT_DIR/templates/common/claude-code/skills/"* .claude/skills/ 2>/dev/null || true
+for phase_dir in design implement shared; do
+  if [ -d "$SCRIPT_DIR/phases/$phase_dir/skills" ]; then
+    cp -r "$SCRIPT_DIR/phases/$phase_dir/skills/"* .claude/skills/ 2>/dev/null || true
+  fi
+done
+
+# --- .claude/workflows/ (workflow scripts) ---
+if [ -d "$SCRIPT_DIR/.claude/workflows" ]; then
+  mkdir -p .claude/workflows
+  cp "$SCRIPT_DIR/.claude/workflows/"*.md .claude/workflows/ 2>/dev/null || true
 fi
+
+# --- .claude/project/ (extensibility overlay — never touched by sync.sh) ---
+mkdir -p .claude/project/{agents,rules,skills,hooks}
+cat > .claude/project/README.md << 'PROJEOF'
+# Project Extensions
+
+Files in this directory are project-specific. They are NEVER overwritten by sync.sh.
+
+## How to extend
+
+- **Custom agents:** Drop .md files in agents/ — they appear alongside base agents
+- **Custom rules:** Drop .md files in rules/ — auto-loaded with base rules (same name = override)
+- **Custom skills:** Drop directories with SKILL.md in skills/ — appear alongside base skills
+- **Custom hooks:** Drop .sh files in hooks/, register in settings.local.json
+PROJEOF
+
+# --- .claude/settings.local.json (project overlay, gitignored) ---
+cat > .claude/settings.local.json << 'SLEOF'
+{
+  "permissions": { "allow": [] },
+  "hooks": {}
+}
+SLEOF
 
 # --- CLAUDE.local.md (personal overrides, gitignored) ---
 cat > CLAUDE.local.md << EOF
@@ -435,7 +463,7 @@ if [ "$MINIMAL" -eq 0 ]; then
 
     # Copy gate scripts to project (quality gates)
     mkdir -p scripts
-    GATES_DIR="$SCRIPT_DIR/quality/gates"
+    GATES_DIR="$SCRIPT_DIR/phases/review/gates"
     for gate in visual-gate.sh visual-regression.sh accessibility-check.sh ui-visual-check.sh; do
       if [ -f "$GATES_DIR/$gate" ]; then
         cp "$GATES_DIR/$gate" "scripts/$gate"
@@ -505,7 +533,7 @@ npm install --silent 2>/dev/null
 
 # --- Initial commit ---
 git add -A
-git commit -m "feat: initial scaffold with SDD/TRIO infrastructure" --quiet
+git commit -m "feat: initial scaffold with SDD infrastructure" --quiet
 
 echo ""
 echo "=== Done ==="

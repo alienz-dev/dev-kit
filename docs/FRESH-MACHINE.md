@@ -96,6 +96,20 @@ jq --version && echo "✓ jq"
 command -v claude && echo "✓ Coding agent"
 ```
 
+### Workflow Support (Optional)
+
+Dynamic workflows require Claude Code v2.1.154+. To verify:
+```bash
+claude --version
+```
+
+To enable workflows (if not on by default):
+1. Run `claude /config`
+2. Find "Dynamic workflows" row
+3. Enable it
+
+Workflows are in research preview. See `workflow/dynamic-workflows-guide.md` for usage.
+
 ## Corporate Environment Extras
 
 ### TLS/CA Bundle (corporate proxy)

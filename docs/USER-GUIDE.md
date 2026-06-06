@@ -152,6 +152,13 @@ After implementation completes, you play with the result.
 | `/spec-align <spec>` | Compare spec vs code | When spec and code diverge |
 | `/sdd <feature>` | Run implementation | After design is approved |
 | `/researcher <question>` | Deep research | When you need to investigate |
+| `ultracode: <task>` | Trigger a dynamic workflow | Workflow |
+| `/adversarial-review` | Multi-angle code review with adversarial verify | Workflow |
+| `/wave-implement` | TRIO-style wave dispatch with worktree isolation | Workflow |
+| `/deep-audit` | Comprehensive codebase audit | Workflow |
+| `/research-crosscheck` | Multi-angle research with cross-checked sources | Workflow |
+| `/migration-sweep` | Codebase-wide migration pipeline | Workflow |
+| `/sdd-implement` | Full SDD implementation via workflows | Workflow |
 
 ## What Happens Behind the Scenes
 
@@ -203,6 +210,16 @@ After reviewing, if you find problems:
 
 5. **Run /sdd again for fixes.** Each run is a complete implementation cycle. File an issue, run /sdd, review.
 
+### When to use workflows vs skills
+
+- **Simple tasks** → just ask Claude directly
+- **Repeatable procedures** → use a Skill
+- **Few side tasks** → use Subagents
+- **10+ agents, parallel fan-out, rerunnable** → use a Dynamic Workflow
+
+Trigger with `ultracode: <task>` or `/effort ultracode` for session-wide.
+See `workflow/dynamic-workflows-guide.md` for the complete decision framework.
+
 ## What Works Today
 
 | Feature | Status |
@@ -215,6 +232,7 @@ After reviewing, if you find problems:
 | `/researcher` deep research | ✅ Works |
 | `issue-cli` issue tracking | ✅ Works |
 | Pipeline gates (quality checks) | ✅ Works |
+| Dynamic workflows | ✅ Available (research preview, v2.1.154+) |
 
 ## Limitations
 

@@ -107,3 +107,27 @@ Common failure modes from real production use, with root causes and fixes.
 ### Symptom: Subagent not responding
 **Cause:** Subagent may have hit context limit or errored.
 **Fix:** Check subagent output via `TaskOutput` tool. Restart if needed.
+
+---
+
+## Workflow-Specific Issues
+
+### Args arrive as string, not object
+**Symptom**: `args.test` returns `undefined`, `typeof args` is `"string"`
+**Fix**: Use `const _args = typeof args === 'string' ? JSON.parse(args) : (args || {})` at the top of workflow scripts
+
+### Model override has no effect
+**Symptom**: `model: 'haiku'` in `agent()` doesn't change the model used
+**Fix**: Set session model via `/model` before running the workflow
+
+### No mid-run user input
+**Symptom**: Workflow can't ask for human approval between stages
+**Fix**: Split interactive portions into separate workflows or use skills for those phases
+
+### Max 16 concurrent agents
+**Symptom**: More than 16 agents queued, not running in parallel
+**Fix**: This is a hard limit. Reduce parallelism or split into multiple workflow runs
+
+### Resume only within session
+**Symptom**: Can't resume a workflow after exiting Claude Code
+**Fix**: Re-run the workflow from scratch. Completed agents re-execute (no cross-session cache)

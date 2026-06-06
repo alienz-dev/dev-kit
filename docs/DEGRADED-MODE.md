@@ -42,3 +42,10 @@ Is Claude Code available?
 | `Agent()` subagent dispatch | ✓ | — |
 | `/trio` skill | ✓ | — |
 | `/grill` skill | ✓ | — |
+| `ultracode: <task>` | ✓ | — | Requires Claude Code v2.1.154+ with workflows enabled |
+| `/adversarial-review` | ✓ | — | Multi-angle code review workflow |
+| `/wave-implement` | ✓ | — | TRIO wave dispatch workflow |
+| `/deep-audit` | ✓ | — | Comprehensive audit workflow |
+| `/research-crosscheck` | ✓ | — | Research with cross-check workflow |
+| `/migration-sweep` | ✓ | — | Migration pipeline workflow |
+| `/sdd-implement` | ✓ | — | Full SDD implementation workflow |

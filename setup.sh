@@ -131,7 +131,7 @@ ok "Directories created"
 echo ""
 echo "=== Agent rules ==="
 
-ok "Safety rules available in agents/rules/SAFETY.md"
+ok "Safety rules available in phases/shared/rules/"
 
 # --- PATH ---
 echo ""

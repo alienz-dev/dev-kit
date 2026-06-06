@@ -9,6 +9,7 @@ Three-tier enforcement model for pipeline stages, role boundaries, and behaviora
 | **Code-enforced** | `gate.sh` (file-based FSM) | Pipeline stage progression, state tracking | Hard block — cannot bypass without modifying scripts |
 | **Code-enforced** | `lefthook` (pre-commit hooks) | Test gate, typecheck, lint before commit | Hard block — git rejects commit on failure |
 | **Prompt-enforced** | Agent role definitions | Role boundaries, spawn policies, write scopes | Soft block — agent honors constraint via system prompt |
+| **Workflow-enforced** | Orchestration logic in workflow script | Stronger than prompt — script executes deterministically. Handles concurrency, retries, phase tracking. |
 
 ### What IS Enforced (Code-Enforced)
 
@@ -22,6 +23,10 @@ Three-tier enforcement model for pipeline stages, role boundaries, and behaviora
 - **Write scope boundaries:** Agent role prompts define which paths each role can write, but enforcement depends on agent compliance
 - **Stall detection:** No active monitoring — agents must self-report stalls
 - **Stage-gated spawns:** Agent prompts specify which roles are valid at which stages, but no runtime check exists
+
+> **Workflows address some gaps**: Role spawn policies and stage-gated spawns can be
+> structurally enforced in workflow scripts. The `wave-dispatch` workflow codifies
+> "max 3 coders per wave" and "no file overlap" as script logic rather than prompt instructions.
 
 ## Pipeline Stages
 

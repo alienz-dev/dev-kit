@@ -10,6 +10,20 @@ Agents implement wrong things without a contract. Code without a spec is a guess
 Idea → Spec (draft) → Grill → Spec (approved) → Plan (derived) → Implement (TDD) → Verify → Ship
 ```
 
+### Workflow-Based Implementation
+
+The "Implement (TDD)" step can be driven by dynamic workflows instead of manual orchestration:
+
+- **sdd-test-gen**: Generates tests from spec, verifies RED gate, checks AC coverage
+- **wave-dispatch**: Dispatches coders in parallel worktrees, runs GREEN gate, post-wave gates
+- **sdd-review**: Multi-perspective review with adversarial verification
+- **sdd-retro**: Automated retro with classification and routing
+
+The `/sdd` skill delegates to these workflows automatically. For a fully automated run:
+`ultracode: implement <spec-path>` uses the `sdd-implement` meta-workflow.
+
+See `workflow/dynamic-workflows-guide.md` for the complete guide.
+
 ## Rules
 
 1. Every feature touching >1 file MUST have a spec before implementation.
@@ -185,3 +199,130 @@ Derived from: SPEC-NNN
 - Bug fix → file an issue, implement, done
 - Feature (1 file only) → issue is sufficient
 - Feature (>1 file) → write spec first, do not implement without one
+
+---
+
+## Implementation Protocol (absorbed from TRIO)
+
+The implementation phase follows the TRIO protocol: **T**est → **R**ed → **I**mplement → **O**bserve.
+
+### The Iron Law
+
+```
+The coder NEVER sees the spec. They only see failing tests.
+```
+
+This prevents "implement to spec" shortcuts where the coder reads the spec and writes code that satisfies the words but not the intent. When they only have tests, they must make the tests pass — which IS the intent.
+
+### Role Separation
+
+| Role | Responsibility | Spawns |
+|------|---------------|--------|
+| Supervisor/Planner | Writes spec, spawns test-manager + sprint-manager | test-manager, sprint-manager |
+| Test-Manager | Writes tests, verifies RED | tester (for help) |
+| Sprint-Manager | Dispatches coders, runs all gates, spawns reviewer | coder ×N, reviewer-lite, reviewer |
+| Coder | Makes tests pass | — |
+
+**Critical:** Test-manager does NOT spawn coders. Sprint-manager does NOT write tests.
+
+### Pipeline Stages
+
+Stages and transitions are defined in [`transitions.json`](../pipeline/transitions.json) (single source of truth).
+
+Top-level stages: `plan → test → sprint → review → retro → done | failed`
+
+### Sprint Sub-Gates
+
+The sprint stage contains sub-gates defined in `transitions.json` `gates.sprint`:
+
+| Gate | What It Checks |
+|------|---------------|
+| green | All visible tests pass |
+| wiring | Entry-reachability check passes (orphaned modules, dead imports) |
+| visual | UI visual check passes (UI projects only) |
+| hidden | Hidden regression tests pass (behavioral invariants, contract violations) |
+| alignment | Spec-to-code alignment check passes |
+| activation | Feature reachable from entry point |
+
+**Gate sequence per wave:**
+```
+[coder dispatch] → GREEN → wiring → visual → wave-smoke.sh
+```
+
+**After all waves complete:**
+```
+hidden → alignment → activation → review
+```
+
+### Visual Gate (UI projects only)
+
+After GREEN, if the changeset includes UI files (.tsx, .jsx, .vue, .svelte, .css, .scss, .html):
+
+The composed gate runs three layers:
+1. **Layer 1: Static Analysis** — `ui-visual-check.sh` (always runs, <5s, no browser)
+2. **Layer 2: Visual Regression** — `visual-regression.sh` (Playwright screenshots, needs dev server)
+3. **Layer 3: Accessibility** — `accessibility-check.sh` (axe-core WCAG checks, needs dev server)
+
+**Pass:** All layers pass. **Fail:** Re-dispatch coder (max 2 visual retries). **No dev server:** Layer 1 only.
+
+### Backward Transitions (Rework)
+
+| From | To | When |
+|------|----|------|
+| review → plan | Spec needs revision |
+| review → test | New tests needed (reviewer found gap) |
+| sprint → test | Alignment patch needed |
+| sprint → sprint | Patch wave for targeted fix |
+
+### Patch Waves
+
+A patch wave is a targeted fix for alignment issues. Unlike a full re-dispatch, it is scoped to specific files and ACs.
+
+**When to use:** Alignment gate reports DIVERGENT/UNIMPLEMENTED for 1-3 files, code structure is sound, one behavior is wrong.
+
+**When NOT to use:** Fundamental approach wrong, multiple interdependent files, spec ambiguity requires re-interpretation.
+
+**Patch briefing** relaxes the information barrier for the specific divergent AC only:
+- Includes the specific AC text (not the full spec)
+- Includes file:line of the divergence
+- Includes expected behavior (quoted from spec)
+
+**Limits:** Max 2 patch waves per alignment issue → full re-dispatch → report failure to user.
+
+### Failure Handling
+
+| Gate | Max Retries | On Exhaust |
+|------|-------------|------------|
+| GREEN | 3 | Pipeline status → failed |
+| Visual | 2 | Pipeline status → failed |
+| Hidden | 1 | Promote hidden test to visible, re-dispatch coder |
+
+### Hidden Tests
+
+Hidden tests are regression tests the coder never sees. They verify:
+- Edge cases the spec mentions but tests don't explicitly cover
+- Integration behavior across module boundaries
+- Invariants that should never break
+
+Hidden tests run at the hidden gate (after all waves complete). If they fail:
+1. Sprint-manager promotes the failing hidden test to visible
+2. Re-dispatches coder with the now-visible test
+
+### Gate Enforcement
+
+Production observation: agents skip gates unless explicitly mandated in their prompts.
+
+**Rules:**
+1. Gates must be in the agent's prompt (not just a referenced doc)
+2. Phrased as "DO NOT SKIP" with explicit exit-code handling
+3. Positioned at the exact workflow step where they run
+4. Enforced at the appropriate tier (code-enforced via gate.sh/lefthook, or prompt-enforced via role definitions)
+
+### Anti-Patterns
+
+- ❌ Coder reads the spec → implements to words, not intent
+- ❌ Tests written after code → tests verify implementation, not behavior
+- ❌ Skipping RED verification → tests might already pass (testing nothing)
+- ❌ Single agent does everything → no external verification
+- ❌ Planner spawns coder directly → bypasses sprint-manager gates
+- ❌ Test-manager spawns coder → role confusion, no gate enforcement

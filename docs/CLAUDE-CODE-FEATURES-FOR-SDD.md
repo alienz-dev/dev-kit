@@ -299,3 +299,40 @@ hooks:
 
 **Keep:** lefthook, gate.sh, spec-trace.sh, quality gates — these are code-enforced
 mechanisms that complement Claude Code's prompt-based and hook-based enforcement.
+
+---
+
+## 7. Dynamic Workflows
+
+Dynamic workflows (Claude Code v2.1.154+, research preview) move orchestration logic
+from Claude's context window into executable JavaScript scripts.
+
+### How They Map to SDD
+
+| SDD Phase | Workflow | What It Does |
+|-----------|----------|-------------|
+| Test Manager (RED) | sdd-test-gen | Generate tests, verify RED, check AC coverage |
+| Sprint (GREEN) | wave-dispatch | Parallel coders, GREEN gate, post-wave gates |
+| Review | sdd-review | Multi-perspective review with adversarial verify |
+| Retro | sdd-retro | Classify findings, route outputs |
+
+### Hybrid Model
+- Skills for interactive phases (grill, approval)
+- Workflows for automated phases (test gen, sprint, review, retro)
+- gate.sh for filesystem enforcement
+- Hooks for git enforcement
+
+### Script Primitives
+- `agent(prompt, opts)` — spawn worker
+- `parallel([fn1, fn2])` — barrier
+- `pipeline(items, stage1, stage2)` — streaming
+- `phase('Title')` — UI grouping
+- `log('message')` — progress
+- `args` — input (parse with JSON.parse)
+- `budget.total/spent/remaining` — token tracking
+
+### Known Bugs
+- Args arrive as JSON string — use `JSON.parse(args)` workaround
+- Model override ignored — set `/model` before running workflow
+
+See `workflow/dynamic-workflows-guide.md` for the complete guide.

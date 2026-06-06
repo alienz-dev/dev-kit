@@ -35,6 +35,11 @@ my-project/
 │   │   ├── test-manager.md      # RED gate owner
 │   │   ├── researcher.md        # Deep investigation
 │   │   └── explorer.md          # Focused search
+│   ├── workflows/               # Dynamic workflows (v2.1.154+)
+│   │   ├── sdd-test-gen.js      # Test generation workflow
+│   │   ├── wave-dispatch.js     # TRIO wave dispatch
+│   │   ├── sdd-review.js        # Multi-perspective review
+│   │   └── sdd-retro.js         # Retrospective workflow
 │   ├── rules/                   # Path-scoped rules
 │   │   ├── testing.md           # Loaded for *.test.ts files
 │   │   ├── code-style.md        # Loaded for src/**/*.ts files
@@ -94,6 +99,10 @@ Skills are reusable workflows with dynamic context injection:
 /grill topic          # Design tree interview
 ```
 
+Skills handle interactive workflows (interviews, approval gates). For automated
+multi-step phases, see [dynamic workflows](CLAUDE-CODE-FEATURES-FOR-SDD.md#dynamic-workflows)
+which execute as scripts rather than prompt-driven conversations.
+
 ## Hooks
 
 Hooks in `.claude/settings.json` run automatically:
@@ -114,6 +123,11 @@ Claude Code's in-process `Agent()` tool handles multi-agent spawning:
 6. **You** approve and close
 
 No separate CLI instances. No daemon. No multiplexer.
+
+**Alternative: workflow-based orchestration.** With Claude Code v2.1.154+, dynamic
+workflows can automate the multi-agent phases (test gen, sprint, review, retro) as
+executable scripts. Skills remain for interactive phases (grill, approval). See
+[CLAUDE-CODE-FEATURES-FOR-SDD.md](CLAUDE-CODE-FEATURES-FOR-SDD.md#dynamic-workflows).
 
 ## Comparison with Full Mode
 

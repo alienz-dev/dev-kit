@@ -11,6 +11,22 @@
 - Test single: `npx vitest run tests/<path>`
 - Lint: `npm run lint`
 
+### Workflow Commands (Dynamic)
+
+These commands use Claude Code's dynamic workflows for automated parallel orchestration:
+
+| Command | Description |
+|---------|-------------|
+| `ultracode: <task>` | Trigger a workflow for a specific task |
+| `/adversarial-review` | Multi-angle code review with adversarial verify |
+| `/wave-implement` | TRIO-style wave dispatch with worktree isolation |
+| `/deep-audit` | Comprehensive codebase audit |
+| `/research-crosscheck` | Multi-angle research with cross-checked sources |
+| `/migration-sweep` | Codebase-wide migration pipeline |
+| `/sdd-implement` | Full SDD implementation via workflows |
+
+Requires Claude Code v2.1.154+ with workflows enabled.
+
 ## Coder Workflow (TRIO)
 1. Read this file (AGENTS.md)
 2. Read your briefing (task + test file paths)
@@ -22,6 +38,10 @@
 
 DO NOT SKIP steps 5-6. If tests fail, fix before proceeding.
 DO NOT read specs/ directory — you work from tests only.
+
+> **Workflow variant**: In workflow-enabled projects, the implementation cycle can be
+> driven by the `wave-dispatch` workflow for automated parallel coder dispatch.
+> Trigger with `ultracode: implement <feature>` or use `/sdd` which delegates automatically.
 
 ## Code Style
 - TypeScript strict, no `any` — use `unknown` + guards

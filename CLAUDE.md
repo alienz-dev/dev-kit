@@ -15,6 +15,8 @@ No compiled code, no package.json at root, no test suite to run.
 - `templates/` — project templates copied by scaffold
 - `agents/` — agent role definitions and rules
 - `workflow/` — SDD, TRIO, pipeline methodology
+  - `dynamic-workflows-guide.md` — when and how to use dynamic workflows
+- `.claude/workflows/` — reusable workflow scripts (adversarial-review, wave-dispatch, sdd-test-gen, sdd-review, sdd-retro, sdd-implement, deep-audit, migration-sweep, research-crosscheck)
 - `tools/` — specialized tooling (explainer, issue-cli)
 
 ## Conventions
