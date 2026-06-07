@@ -19,6 +19,26 @@ No compiled code, no package.json at root, no test suite to run.
 - `.claude/workflows/` — reusable workflow scripts (adversarial-review, wave-dispatch, sdd-test-gen, sdd-review, sdd-retro, sdd-implement, deep-audit, migration-sweep, research-crosscheck)
 - `tools/` — specialized tooling (explainer, issue-cli)
 
+## Skills Sync
+
+Bundled skills live in `phases/*/skills/` and are copied by `scaffold.sh` into new projects.
+Global skills live at `~/.claude/skills/` and are available in every session.
+
+**When changing bundled skills, also update the global copies:**
+
+```bash
+cp -r phases/design/skills/orient ~/.claude/skills/orient
+cp -r phases/design/skills/grill ~/.claude/skills/grill
+cp -r phases/implement/skills/debug ~/.claude/skills/debug
+cp -r phases/implement/skills/sdd ~/.claude/skills/sdd
+cp -r phases/review/skills/quick-review ~/.claude/skills/quick-review
+```
+
+Or use `sync.sh` if working from a scaffolded project.
+
+Skills that are global-only (not bundled):
+- `~/.claude/skills/scaffold/` — project scaffolding and retrofit
+
 ## Conventions
 
 - Shell scripts: bash, `set -euo pipefail`, idempotent
