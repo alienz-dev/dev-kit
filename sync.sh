@@ -57,7 +57,7 @@ done
 
 # --- Skills ---
 echo "Syncing skills..."
-for phase_dir in design implement shared; do
+for phase_dir in design implement review shared; do
   if [ -d "$DEV_KIT_DIR/phases/$phase_dir/skills" ]; then
     for skill_dir in "$DEV_KIT_DIR/phases/$phase_dir/skills/"*/; do
       [ -d "$skill_dir" ] || continue

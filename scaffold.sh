@@ -394,7 +394,7 @@ for phase_dir in design implement review shared; do
 done
 
 # --- .claude/skills/ ---
-for phase_dir in design implement shared; do
+for phase_dir in design implement review shared; do
   if [ -d "$SCRIPT_DIR/phases/$phase_dir/skills" ]; then
     cp -r "$SCRIPT_DIR/phases/$phase_dir/skills/"* .claude/skills/ 2>/dev/null || true
   fi
