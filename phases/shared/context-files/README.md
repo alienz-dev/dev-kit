@@ -8,7 +8,7 @@ Templates for files that provide context to AI agents at session start.
 2. **user-profile.md** — Communication style, preferences, do-not-do
 3. **Hot memory** — Per-workspace curated patterns (3000 char budget)
 4. **Project state** — STATUS.md, NEXT-SESSION.md, CONTEXT.md, DECISIONS.md
-5. **Knowledge** — .agents/knowledge/*.md (project-specific)
+5. **Knowledge** — Project-specific knowledge (loaded via agent definitions)
 6. **Skills** — On-demand skill files loaded by topic
 
 ## client_rules.md
@@ -60,12 +60,13 @@ Exact next action for cold-start sessions. Not "continue with X" but specific st
 
 Architecture Decision Records. Hard-to-reverse decisions with rationale.
 
-## .agents/knowledge/
+## Project Knowledge
 
-Project-specific knowledge files (read-only for agents):
-- `project.md` — Architecture, tech stack, key patterns
-- `workflow.md` — TDD lifecycle, state transitions, gates
-- `goals.md` — Vision, phases, success metrics
+Project-specific knowledge is embedded in agent definitions and rules:
+- `phases/shared/rules/ROLES.md` — Role definitions and dispatch rules
+- `phases/shared/rules/HANDOFF.md` — Inter-role data exchange protocols
+- `phases/shared/rules/CONSOLIDATED.md` — Universal safety rules
+- Project state files: STATUS.md, CONTEXT.md, DECISIONS.md
 
 ## Skills (on-demand)
 

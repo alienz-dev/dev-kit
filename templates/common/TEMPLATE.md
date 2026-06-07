@@ -66,72 +66,15 @@ Terms used precisely in specs, tests, and agent communication.
 
 ## Agent Infrastructure
 
-### .agents/knowledge/project.md
-```markdown
-# <Name> — Project Knowledge
+Agent definitions live in `.claude/agents/` (14 roles), rules in `.claude/rules/`, skills in `.claude/skills/`, hooks in `.claude/hooks/`, and workflows in `.claude/workflows/`. All are copied from the dev-kit's `phases/` directory during scaffold.
 
-## Architecture
-<Brief architecture description>
-
-## Tech Stack
-- Language: TypeScript / Python / Go
-- Framework: <framework>
-- Testing: vitest / pytest / go test
-- Build: <build tool>
-
-## Key Patterns
-- <Pattern 1>
-- <Pattern 2>
-
-## Spec-Driven TDD
-Constitution at .agents/constitution.yml defines gates.
-Lifecycle: open → specced → tests_written → red_verified → implementing → green → reviewing → closed
-```
-
-### .agents/knowledge/workflow.md
-```markdown
-# Workflow: Spec-Driven TDD
-
-## Issue Lifecycle
-open → specced → tests_written → red_verified → implementing → green → reviewing → closed
-
-## Gate Requirements
-| From | To | Gate |
-|------|----|------|
-| open | specced | Spec file exists and is linked |
-| specced | tests_written | Test files exist with assertions |
-| tests_written | red_verified | All tests fail (RED) |
-| red_verified | implementing | Coder assigned |
-| implementing | green | All visible tests pass |
-| green | reviewing | Reviewer assigned |
-| reviewing | closed | Approved AND hidden tests pass |
-```
-
-### .agents/constitution.yml
-```yaml
-forward_transitions:
-  - from: open
-    to: specced
-    gate: spec_linked
-  - from: specced
-    to: tests_written
-    gate: tests_exist
-  - from: tests_written
-    to: red_verified
-    gate: all_tests_fail
-  - from: red_verified
-    to: implementing
-    gate: coder_assigned
-  - from: implementing
-    to: green
-    gate: visible_tests_pass
-  - from: green
-    to: reviewing
-    gate: reviewer_assigned
-  - from: reviewing
-    to: closed
-    gate: approved_and_hidden_pass
-```
+### Key Files
+- `.claude/agents/*.md` — role-specific agent definitions (frontmatter + instructions)
+- `.claude/rules/CONSOLIDATED.md` — universal safety rules loaded by every agent
+- `.claude/rules/ROLES.md` — role registry, dispatch rules, contracts
+- `.claude/rules/HANDOFF.md` — inter-role data exchange protocols
+- `.claude/rules/complexity-scoring.md` — agent spawning thresholds
+- `.claude/settings.json` — hooks, permissions, tool allowlists
 
 ## TypeScript Defaults
 
@@ -189,16 +132,21 @@ dist/
 project/
 ├── src/                    # Source code
 ├── tests/                  # Test files (mirror src/ structure)
-├── specs/                  # Feature specifications
+│   ├── unit/               # Unit tests
+│   └── hidden/             # Hidden regression tests (coder never sees)
+├── specs/                  # Feature specifications (DO NOT READ as coder)
 │   └── SDD.md             # Process reference
 ├── issues/                 # Issue tracking (markdown + index)
 ├── plans/                  # Implementation plans
 ├── docs/                   # Documentation
-├── .agents/
-│   ├── knowledge/          # Project knowledge (read-only for agents)
-│   ├── workspace/          # Agent workspace state
-│   ├── constitution.yml    # TRIO gates
-│   └── agents.yml          # Agent definitions
+├── .claude/
+│   ├── agents/             # Agent definitions (14 roles)
+│   ├── rules/              # Shared rules (CONSOLIDATED, ROLES, HANDOFF, etc.)
+│   ├── skills/             # Skills (grill, sdd, trio, researcher, etc.)
+│   ├── hooks/              # Enforcement hooks (block-dangerous, check-spec-approval, etc.)
+│   ├── workflows/          # Dynamic workflows (wave-dispatch, adversarial-review, etc.)
+│   └── settings.json       # Hooks, permissions, tool allowlists
+├── .pipeline/              # Pipeline state (test_map, coder results, gate proofs)
 ├── STATUS.md
 ├── NEXT-SESSION.md
 ├── CONTEXT.md

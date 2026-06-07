@@ -450,7 +450,7 @@ Every role has a **contract** defining its boundaries:
 
 **Cannot:**
 - Read: specs/ (enforced by briefing — spec paths excluded)
-- Write: .agents/knowledge/, STATUS.md, issues/
+- Write: STATUS.md, issues/
 
 **Behavior:**
 1. Receive briefing from /trio: "Make these tests pass: [paths]"

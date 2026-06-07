@@ -10,7 +10,7 @@ FEATURE="${1:?Usage: retro-runner.sh <feature-name> [--lightweight|--full]}"
 MODE="${2:---lightweight}"
 PIPELINE_DIR=".pipeline"
 RETRO_DIR="workflow/retro"
-KNOWLEDGE_DIR=".agents/knowledge/heuristics"
+KNOWLEDGE_DIR=".pipeline/heuristics"
 TODAY=$(date +%Y-%m-%d)
 
 # --- Validate pipeline exists ---

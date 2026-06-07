@@ -11,21 +11,61 @@
 - Test single: `npx vitest run tests/<path>`
 - Lint: `npm run lint`
 
+## Workflow (SDD — Spec-Driven Development)
+
+Features are built through a 3-phase lifecycle. **Do not skip phases.**
+
+### Phase 1: Design (interactive — user makes decisions)
+| Command | Description |
+|---------|-------------|
+| `/grill <topic>` | Design interview — exhaustive Q&A exploring design space |
+| `/ba-validate <spec>` | Validate spec quality (structural + semantic) |
+| `/approve <spec>` | Approve spec for implementation |
+| `/researcher <question>` | Deep investigation with parallel explorers (ARIA v2) |
+
+### Phase 2: Implement (automatic — walk away)
+| Command | Description |
+|---------|-------------|
+| `/sdd <feature>` | Full pipeline: plan → test → code → review → retro |
+| `/trio <feature>` | Sprint-only: wave dispatch with worktree isolation |
+
+### Phase 3: Review (human — evaluate results)
+- Play with the feature, file issues if changes needed
+- Run `/sdd` again for fixes, `/grill` for design changes
+
 ### Workflow Commands (Dynamic)
-
-These commands use Claude Code's dynamic workflows for automated parallel orchestration:
-
+These use Claude Code's dynamic workflows for automated parallel orchestration:
 | Command | Description |
 |---------|-------------|
 | `ultracode: <task>` | Trigger a workflow for a specific task |
 | `/adversarial-review` | Multi-angle code review with adversarial verify |
-| `/wave-implement` | TRIO-style wave dispatch with worktree isolation |
 | `/deep-audit` | Comprehensive codebase audit |
 | `/research-crosscheck` | Multi-angle research with cross-checked sources |
 | `/migration-sweep` | Codebase-wide migration pipeline |
-| `/sdd-implement` | Full SDD implementation via workflows |
 
-Requires Claude Code v2.1.154+ with workflows enabled.
+## Agent Roles
+
+### Main Session (interactive, persistent)
+| Role | Mode | Purpose |
+|------|------|---------|
+| Supervisor/Planner | Default | Orchestrate, diagnose, delegate. Never implements. |
+| Sprint-Manager | `/trio` skill | Wave dispatch, gate ownership, worktree merge |
+| Researcher | `/researcher` skill | ARIA v2 — spawn explorers, synthesize, critic |
+
+### Subagents (spawned by main session, return and die)
+| Role | Type | Purpose |
+|------|------|---------|
+| Coder | Subagent | Make failing tests pass. Never sees spec. |
+| Test-Manager | Subagent | Own RED gate — write tests, verify they fail |
+| Tester | Subagent | Helper for test-manager (additional tests) |
+| Reviewer-Lite | Subagent | Fast review for complexity 4-7 |
+| Reviewer | Subagent | Full adversarial review for complexity 8+ |
+| BA | Subagent | Requirements gathering (complexity 6+) |
+| Architect | Subagent | System design + ADRs (complexity 8+) |
+| Explorer | Subagent | Focused research angle (haiku, parallel) |
+| Research-Critic | Subagent | Adversarial review of research synthesis |
+| UI-Designer | Subagent | Visual design loop (opus) |
+| Data-Analyst | Subagent | Iterative data analysis (sonnet) |
 
 ## Coder Workflow (TRIO)
 1. Read this file (AGENTS.md)
@@ -57,7 +97,7 @@ DO NOT read specs/ directory — you work from tests only.
 
 ### 🚫 Never
 - Read specs/ (information barrier — you work from tests)
-- Modify STATUS.md, NEXT-SESSION.md, .agents/
+- Modify STATUS.md, NEXT-SESSION.md
 - Use `pool: 'forks'` in vitest (causes OOM)
 - Run raw `tsc --noEmit` (use `npm run typecheck`)
 - Force push, reset --hard, rm -rf
@@ -71,5 +111,5 @@ DO NOT read specs/ directory — you work from tests only.
 - `src/` — source code (your primary output)
 - `tests/` — test files (your primary input)
 - `specs/` — DO NOT READ
-- `.agents/` — agent infrastructure (read-only)
+- `.claude/` — agent infrastructure (agents, rules, skills, hooks)
 - `.pipeline/` — pipeline state (read-only)

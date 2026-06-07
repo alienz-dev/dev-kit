@@ -109,13 +109,13 @@ Action: ${finding.action}
 Destination: ${destination}
 
 ${destination === 'hot-memory' ? `Write to the workspace hot memory file. Add a one-line entry with the heuristic.
-Path: ${projectDir}/.agents/hot-memory.md (create if not exists, append if exists)` : ''}
+Path: ${projectDir}/.pipeline/hot-memory.md (create if not exists, append if exists)` : ''}
 
 ${destination === 'issue' ? `File an issue for this finding. Use the issue-cli if available, or create a markdown issue file.
 Include: title, description, root cause, recommended fix.` : ''}
 
 ${destination === 'knowledge' ? `Write to the project knowledge base.
-Path: ${projectDir}/.agents/knowledge/retro-findings.md (create if not exists, append if exists)` : ''}
+Path: ${projectDir}/.pipeline/retro-findings.md (create if not exists, append if exists)` : ''}
 
 Project directory: ${projectDir}`,
       {

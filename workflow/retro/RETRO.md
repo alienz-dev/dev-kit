@@ -52,7 +52,7 @@ Lessons learned in agent sessions are lost. Errors repeat. Patterns aren't captu
 | Content Type | Destination |
 |---|---|
 | Reusable pattern/footgun | Hot memory (`hot-memory.sh add`) |
-| Project-specific learning | `.agents/knowledge/` |
+| Project-specific learning | `.pipeline/heuristics/` or project state files |
 | Session continuity | Workspace state file |
 | General investigation | `~/plans/` or knowledge base |
 | Actionable bug or improvement | `issue open "title" --project dev-kit --type bug|enhancement` |

@@ -17,18 +17,18 @@ else
 fi
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-if [ -d "$PROJECT_DIR/.git" ]; then
-  echo "Error: $PROJECT_DIR already has a git repo"
-  exit 1
-fi
-
 echo "=== Scaffolding: $NAME ==="
 echo "Directory: $PROJECT_DIR"
 
 # --- Create project ---
 mkdir -p "$PROJECT_DIR"
 cd "$PROJECT_DIR"
-git init && git branch -m main
+
+if [ -d ".git" ]; then
+  echo "Git repo already exists — skipping git init"
+else
+  git init && git branch -m main
+fi
 
 # --- Package.json ---
 cat > package.json << EOF
@@ -111,84 +111,9 @@ if [ "$MINIMAL" -eq 0 ]; then
 fi
 
 # --- Agent infrastructure ---
-if [ "$MINIMAL" -eq 0 ]; then
-mkdir -p .agents/{knowledge,workspace,scripts,hooks}
-
-cat > .agents/knowledge/project.md << EOF
-# $NAME — Project Knowledge
-
-## Architecture
-<Brief architecture description>
-
-## Tech Stack
-- Language: TypeScript
-- Runtime: Node.js 22
-- Testing: vitest (threads pool)
-- Build: tsc
-
-## Key Patterns
-- Spec-driven development (SDD)
-- Spec-driven development with implementation protocol (wave dispatch, gate sequence)
-- File-based issue tracking
-EOF
-
-cat > .agents/knowledge/workflow.md << EOF
-# Workflow: Spec-Driven Development (SDD)
-
-## Pipeline Stages
-plan → test → sprint → review → retro → done | failed
-
-## Sprint Sub-Gates
-green → wiring → visual → hidden → alignment → activation
-
-## Roles
-- Supervisor: orchestrate, never write code
-- Test-manager: own RED gate (persistent)
-- Coder: make tests pass (ephemeral, never sees spec)
-- Reviewer: verify spec intent (ephemeral)
-
-See .pipeline/transitions.json for the canonical state machine.
-EOF
-
-cat > .agents/constitution.yml << EOF
-# constitution.yml — project-level pipeline config
-# State definitions are in transitions.json (single source of truth).
-# See .pipeline/transitions.json for stage definitions and gate checks.
-constraints:
-  max_coder_parallel: 3
-  max_green_retries: 3
-  max_visual_retries: 2
-EOF
-
-cat > .agents/agents.yml << EOF
-project:
-  name: $NAME
-  repo: $PROJECT_DIR
-runtime:
-  agent_cli: claude
-agents:
-  - id: supervisor
-    tools: [fs_read, glob, grep, execute_bash]
-    write_paths: [/tmp/, issues/, plans/, specs/]
-  - id: coder
-    tools: [fs_read, fs_write, execute_bash, grep, glob]
-    write_paths: [src/, tests/, /tmp/]
-  - id: tester
-    tools: [fs_read, fs_write, execute_bash]
-    write_paths: [tests/, /tmp/]
-  - id: reviewer
-    tools: [fs_read, execute_bash]
-    write_paths: [/tmp/]
-preflight:
-  - check: command
-    name: Node 22 available
-    command: node --version | grep -q v22
-  - check: command
-    name: Dependencies installed
-    command: test -d node_modules
-    fix: npm install
-EOF
-fi # end MINIMAL check for agent infrastructure
+# Agent definitions live in .claude/agents/ (copied from phases/*/agents/)
+# Rules live in .claude/rules/ (copied from phases/*/rules/)
+# No legacy .agents/ structure needed — Claude Code uses .claude/ natively
 
 # --- Specs ---
 if [ "$MINIMAL" -eq 0 ]; then
@@ -321,11 +246,15 @@ See @AGENTS.md for agent roles and coder workflow.
 @.claude/rules/testing.md
 
 ## Agents
-Custom agents in .claude/agents/: coder, reviewer, test-manager, researcher, explorer
+Custom agents in .claude/agents/:
+- Main session: Supervisor/Planner, Sprint-Manager (/trio), Researcher (/researcher)
+- Design: BA, Architect, Explorer, Research-Critic, UI-Designer, Data-Analyst
+- Implement: Coder, Test-Manager, Tester
+- Review: Reviewer-Lite, Reviewer
 
 ## Boundaries
 - src/ and tests/ — writable
-- specs/, .agents/, .pipeline/ — read-only for agents
+- specs/, .pipeline/ — read-only for agents
 - Never pool:forks in vitest, never raw tsc --noEmit
 EOF
 
@@ -335,9 +264,10 @@ mkdir -p .claude/{agents,rules,skills,hooks}
 # --- .claude/hooks/ ---
 cp "$SCRIPT_DIR/phases/shared/hooks/block-dangerous.sh" .claude/hooks/block-dangerous.sh
 cp "$SCRIPT_DIR/phases/shared/hooks/verify-tests.sh" .claude/hooks/verify-tests.sh
+cp "$SCRIPT_DIR/phases/shared/hooks/check-spec-approval.sh" .claude/hooks/check-spec-approval.sh
 cp "$SCRIPT_DIR/phases/implement/hooks/check-briefing.sh" .claude/hooks/check-briefing.sh
 cp "$SCRIPT_DIR/phases/implement/hooks/block-spec-read.sh" .claude/hooks/block-spec-read.sh
-chmod +x .claude/hooks/block-dangerous.sh .claude/hooks/verify-tests.sh .claude/hooks/check-briefing.sh .claude/hooks/block-spec-read.sh
+chmod +x .claude/hooks/block-dangerous.sh .claude/hooks/verify-tests.sh .claude/hooks/check-spec-approval.sh .claude/hooks/check-briefing.sh .claude/hooks/block-spec-read.sh
 
 # --- .claude/settings.json ---
 cat > .claude/settings.json << EOF
@@ -372,6 +302,24 @@ cat > .claude/settings.json << EOF
           {
             "type": "command",
             "command": "bash .claude/hooks/block-spec-read.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/check-spec-approval.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/check-spec-approval.sh"
           }
         ]
       }

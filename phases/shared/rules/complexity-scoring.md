@@ -12,7 +12,7 @@ Every feature gets a complexity score (1-10) at session start. This determines w
 | Score | Classification | Agents | Review Tier |
 |-------|---------------|--------|-------------|
 | 1-3 | Simple | None | Tier 1 (planner inline) |
-| 4-7 | Medium | None | Tier 2 (reviewer-lite) |
+| 4-5 | Medium | None | Tier 2 (reviewer-lite) |
 | 6-7 | Medium-Complex | BA required | Tier 2 (reviewer-lite) |
 | 8-10 | Complex | BA + Architect required | Tier 3 (full reviewer) |
 
@@ -25,6 +25,19 @@ Every feature gets a complexity score (1-10) at session start. This determines w
 | **New patterns** | Existing pattern | Variant of existing | Novel pattern |
 | **Risk** | Low (UI, docs) | Medium (business logic) | High (auth, data, perf) |
 | **Dependencies** | None | Internal (project deps) | External (APIs, services) |
+
+## Task-Type Signals (conditional agent spawning)
+
+Beyond complexity score, certain task types trigger additional agents regardless of score:
+
+| Task Type | Agent Spawned | Signal |
+|-----------|--------------|--------|
+| UI/visual feature | UI-Designer | Touches component files, has visual acceptance criteria in spec, or user requests design work |
+| Data analysis | Data-Analyst | Involves data exploration, statistical analysis, or visualization of datasets |
+
+**How to detect:** The planner reads the spec/intent for these signals:
+- **UI feature:** spec mentions "design", "layout", "component", "responsive", "accessibility", "visual", or references DESIGN.md
+- **Data analysis:** task mentions "analyze", "data", "statistics", "trends", "metrics", or involves CSV/JSON datasets
 
 ## Auto-Promote Rules
 

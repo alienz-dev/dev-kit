@@ -189,14 +189,62 @@ Report: coverage percentage, any uncovered ACs.`,
   }
 )
 
+// ── Phase 3b: Supplement with Tester (if coverage gap) ─────────────
+let supplementalTests = null
+const coverage = trace?.coverage || 0
+const uncoveredACs = trace?.uncoveredACs || []
+
+if (coverage < 100 && uncoveredACs.length > 0) {
+  log(`Coverage at ${coverage}% — spawning Tester for ${uncoveredACs.length} uncovered ACs`)
+
+  supplementalTests = await agent(
+    `You are a tester helper. Write additional tests for these uncovered acceptance criteria.
+The test-manager already generated tests but these ACs have no coverage yet.
+
+Uncovered ACs:
+${uncoveredACs.map(ac => `- ${ac}`).join('\n')}
+
+Spec: ${specPath}
+Project: ${projectDir}
+Test dir: ${testDir}
+
+Read the spec to understand the ACs. Read existing tests to avoid duplication.
+Write new test files that cover the gaps.`,
+    {
+      label: 'tester-supplement',
+      phase: 'Generate',
+      schema: {
+        type: 'object',
+        properties: {
+          testFiles: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                path: { type: 'string' },
+                acIds: { type: 'array', items: { type: 'string' } },
+              },
+              required: ['path', 'acIds'],
+            },
+          },
+          newTests: { type: 'number' },
+        },
+        required: ['testFiles', 'newTests'],
+      },
+    }
+  )
+}
+
 // ── Summary ───────────────────────────────────────────────────────
+const totalTests = (testGen?.totalTests || 0) + (supplementalTests?.newTests || 0)
 return {
-  summary: `${testGen?.totalTests || 0} tests generated for ${acs.length} ACs. RED: ${redCheck?.allFail ? 'CONFIRMED' : 'PARTIAL'}. Coverage: ${trace?.coverage || 0}%`,
-  testFiles: testGen?.testFiles || [],
+  summary: `${totalTests} tests generated for ${acs.length} ACs. RED: ${redCheck?.allFail ? 'CONFIRMED' : 'PARTIAL'}. Coverage: ${coverage}%${supplementalTests ? ` (+${supplementalTests.newTests} from tester)` : ''}`,
+  testFiles: [...(testGen?.testFiles || []), ...(supplementalTests?.testFiles || [])],
   hiddenTestFiles: hiddenTestGen?.testFiles || [],
-  totalTests: testGen?.totalTests || 0,
+  totalTests,
   redConfirmed: redCheck?.allFail || false,
-  coverage: trace?.coverage || 0,
-  uncoveredACs: trace?.uncoveredACs || [],
+  coverage,
+  uncoveredACs,
   acCount: acs.length,
+  testerUsed: !!supplementalTests,
 }

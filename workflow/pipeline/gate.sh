@@ -146,6 +146,12 @@ validate_advance() {
           return 1
         fi
       done
+      # Visual gate is conditional — required only if UI files were changed
+      if [ -f "$gates_dir/visual.required" ] && [ ! -f "$gates_dir/visual.passed" ]; then
+        echo "BLOCKED: Sub-gate 'visual' not passed (UI changes detected). Run the gate first." >&2
+        echo "  Expected: $gates_dir/visual.passed" >&2
+        return 1
+      fi
       ;;
     review_complete)
       # Review doesn't need proof files — reviewer output is the proof
