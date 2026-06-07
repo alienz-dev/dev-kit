@@ -24,13 +24,16 @@ echo "Directory: $PROJECT_DIR"
 mkdir -p "$PROJECT_DIR"
 cd "$PROJECT_DIR"
 
+EXISTING_REPO=0
 if [ -d ".git" ]; then
   echo "Git repo already exists — skipping git init"
+  EXISTING_REPO=1
 else
   git init && git branch -m main
 fi
 
 # --- Package.json ---
+if [ ! -f "package.json" ]; then
 cat > package.json << EOF
 {
   "name": "$NAME",
@@ -51,8 +54,12 @@ cat > package.json << EOF
   "engines": { "node": ">=22" }
 }
 EOF
+else
+  echo "package.json already exists — skipping"
+fi
 
 # --- tsconfig ---
+if [ ! -f "tsconfig.json" ]; then
 cat > tsconfig.json << EOF
 {
   "compilerOptions": {
@@ -72,8 +79,12 @@ cat > tsconfig.json << EOF
   "exclude": ["node_modules", "dist", "tests"]
 }
 EOF
+else
+  echo "tsconfig.json already exists — skipping"
+fi
 
 # --- vitest ---
+if [ ! -f "vitest.config.ts" ]; then
 cat > vitest.config.ts << EOF
 import { defineConfig } from 'vitest/config'
 
@@ -88,8 +99,12 @@ export default defineConfig({
   },
 })
 EOF
+else
+  echo "vitest.config.ts already exists — skipping"
+fi
 
 # --- gitignore ---
+if [ ! -f ".gitignore" ]; then
 cat > .gitignore << EOF
 node_modules/
 dist/
@@ -103,6 +118,15 @@ test-results/
 playwright-report/
 blob-report/
 EOF
+else
+  # Append SDD-specific entries if not present
+  for entry in ".pipeline/" "CLAUDE.local.md" ".claude/settings.local.json"; do
+    if ! grep -qF "$entry" .gitignore 2>/dev/null; then
+      echo "$entry" >> .gitignore
+    fi
+  done
+  echo ".gitignore exists — appended SDD entries"
+fi
 
 # --- Source dirs ---
 mkdir -p src tests
@@ -205,9 +229,14 @@ EOF
 fi # end MINIMAL check for specs/tools/NEXT-SESSION/DECISIONS
 
 # --- AGENTS.md (cross-tool instructions) ---
-sed "s/{{PROJECT_NAME}}/$NAME/g" "$SCRIPT_DIR/templates/common/AGENTS.md.template" > AGENTS.md
+if [ ! -f "AGENTS.md" ]; then
+  sed "s/{{PROJECT_NAME}}/$NAME/g" "$SCRIPT_DIR/templates/common/AGENTS.md.template" > AGENTS.md
+else
+  echo "AGENTS.md already exists — skipping"
+fi
 
 # --- CLAUDE.md (lean, <80 lines, uses @ imports) ---
+if [ ! -f "CLAUDE.md" ]; then
 cat > CLAUDE.md << EOF
 # $NAME
 
@@ -257,6 +286,9 @@ Custom agents in .claude/agents/:
 - specs/, .pipeline/ — read-only for agents
 - Never pool:forks in vitest, never raw tsc --noEmit
 EOF
+else
+  echo "CLAUDE.md already exists — skipping"
+fi
 
 # --- .claude/ directory structure ---
 mkdir -p .claude/{agents,rules,skills,hooks}
@@ -270,6 +302,7 @@ cp "$SCRIPT_DIR/phases/implement/hooks/block-spec-read.sh" .claude/hooks/block-s
 chmod +x .claude/hooks/block-dangerous.sh .claude/hooks/verify-tests.sh .claude/hooks/check-spec-approval.sh .claude/hooks/check-briefing.sh .claude/hooks/block-spec-read.sh
 
 # --- .claude/settings.json ---
+if [ ! -f ".claude/settings.json" ]; then
 cat > .claude/settings.json << EOF
 {
   "permissions": {
@@ -342,6 +375,9 @@ cat > .claude/settings.json << EOF
   }
 }
 EOF
+else
+  echo ".claude/settings.json already exists — skipping"
+fi
 
 # --- .claude/agents/ ---
 for phase_dir in design implement review; do
@@ -492,15 +528,24 @@ mkdir -p .pipeline
 cp "$SCRIPT_DIR/workflow/pipeline/transitions.json" .pipeline/transitions.json
 
 # --- Install deps ---
+if [ -f "package.json" ] && [ -d "node_modules" ]; then
+  echo ""
+  echo "Dependencies already installed — skipping npm install"
+elif [ -f "package.json" ]; then
+  echo ""
+  echo "Installing dependencies..."
+  npm install --silent 2>/dev/null
+fi
 
-# --- Install deps ---
-echo ""
-echo "Installing dependencies..."
-npm install --silent 2>/dev/null
-
-# --- Initial commit ---
+# --- Commit ---
 git add -A
-git commit -m "feat: initial scaffold with SDD infrastructure" --quiet
+if git diff --cached --quiet 2>/dev/null; then
+  echo "No changes to commit"
+elif [ "$EXISTING_REPO" -eq 1 ]; then
+  git commit -m "feat: add SDD infrastructure from dev-kit" --quiet
+else
+  git commit -m "feat: initial scaffold with SDD infrastructure" --quiet
+fi
 
 echo ""
 echo "=== Done ==="
