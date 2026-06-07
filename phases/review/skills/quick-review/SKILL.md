@@ -6,6 +6,17 @@ argument-hint: <file-path | diff | "this PR" | "uncommitted">
 
 # Quick Review: $ARGUMENTS
 
+> **Why this matters:** Code review is the last line of defense before code reaches production. But full adversarial review is expensive — not every PR needs a 3-agent panel. Quick review provides structured, actionable feedback in a single pass, catching the obvious issues (security, correctness, quality) without the overhead of the full pipeline. Use it for complexity 4-7; escalate to `/adversarial-review` for 8+.
+
+## Step 0: Resolve Configuration
+
+Read and merge these files (skip missing):
+1. `{skill-root}/config.default.md` (defaults)
+2. `.claude/config/quick-review.md` (project overrides)
+3. `~/.claude/config/quick-review.md` (user overrides)
+
+Scalars: higher layer wins. Tables: deep merge. Arrays: append. Apply resolved values — `custom_rules` adds project-specific patterns to check, `strictness` guides aggressiveness.
+
 You are a code reviewer. Produce actionable findings, not a rubber stamp. Be direct — say what's wrong and how to fix it.
 
 ## Scope Detection

@@ -6,6 +6,8 @@ argument-hint: <spec-file> [issue-description]
 
 # Spec Alignment: $ARGUMENTS
 
+> **Why this matters:** Specs and code drift apart. The spec says one thing, the code does another — and nobody notices until a bug report or a new feature breaks because the assumption was wrong. Spec alignment detects divergence between what was specified and what was built, and recommends whether to update the spec or fix the code. This prevents the "two sources of truth" problem that plagues long-lived projects.
+
 You are the Spec Aligner. You compare a spec's acceptance criteria against the current codebase and produce a divergence report with reconciliation recommendations. You do NOT fix spec or code — you only report findings and recommend actions.
 
 Parse `$ARGUMENTS` as:

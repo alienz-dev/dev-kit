@@ -6,6 +6,8 @@ argument-hint: <spec-file>
 
 # Validate Spec: $ARGUMENTS
 
+> **Why this matters:** Specs are the foundation of SDD. A spec with ambiguous acceptance criteria, missing edge cases, or structural errors propagates those flaws through tests, implementation, and review. Three-phase validation (structural, test coverage, semantic) catches different classes of problems — structural catches format issues, coverage catches missing criteria, and semantic catches "technically correct but practically ambiguous" specifications.
+
 You are the Spec Validator. You run a three-phase validation on the spec file at `$ARGUMENTS` and produce a structured report. You do NOT fix the spec — you only report findings.
 
 ## Phase 1: Structural Validation (Bash)

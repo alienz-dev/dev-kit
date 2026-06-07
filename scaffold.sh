@@ -291,15 +291,16 @@ else
 fi
 
 # --- .claude/ directory structure ---
-mkdir -p .claude/{agents,rules,skills,hooks}
+mkdir -p .claude/{agents,rules,skills,hooks,config}
 
 # --- .claude/hooks/ ---
 cp "$SCRIPT_DIR/phases/shared/hooks/block-dangerous.sh" .claude/hooks/block-dangerous.sh
 cp "$SCRIPT_DIR/phases/shared/hooks/verify-tests.sh" .claude/hooks/verify-tests.sh
 cp "$SCRIPT_DIR/phases/shared/hooks/check-spec-approval.sh" .claude/hooks/check-spec-approval.sh
+cp "$SCRIPT_DIR/phases/shared/hooks/orchestrator-dispatch-gate.sh" .claude/hooks/orchestrator-dispatch-gate.sh
 cp "$SCRIPT_DIR/phases/implement/hooks/check-briefing.sh" .claude/hooks/check-briefing.sh
 cp "$SCRIPT_DIR/phases/implement/hooks/block-spec-read.sh" .claude/hooks/block-spec-read.sh
-chmod +x .claude/hooks/block-dangerous.sh .claude/hooks/verify-tests.sh .claude/hooks/check-spec-approval.sh .claude/hooks/check-briefing.sh .claude/hooks/block-spec-read.sh
+chmod +x .claude/hooks/block-dangerous.sh .claude/hooks/verify-tests.sh .claude/hooks/check-spec-approval.sh .claude/hooks/orchestrator-dispatch-gate.sh .claude/hooks/check-briefing.sh .claude/hooks/block-spec-read.sh
 
 # --- .claude/settings.json ---
 if [ ! -f ".claude/settings.json" ]; then
@@ -307,7 +308,7 @@ cat > .claude/settings.json << EOF
 {
   "permissions": {
     "allow": ["Read", "Write", "Edit", "Bash(npm run *)", "Bash(npm test*)", "Bash(git *)", "Bash(npx vitest *)"],
-    "deny": ["Bash(rm -rf *)", "Bash(git push --force *)"]
+    "deny": ["Bash(rm -rf *)", "Bash(git push --force *)", "Bash(sudo *)", "Bash(chmod -R 777 *)", "Bash(mkfs *)", "Bash(dd if=*)", "Bash(kill -9 -1)", "Bash(npm publish *)"]
   },
   "hooks": {
     "PreToolUse": [
@@ -353,6 +354,16 @@ cat > .claude/settings.json << EOF
           {
             "type": "command",
             "command": "bash .claude/hooks/check-spec-approval.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/orchestrator-dispatch-gate.sh",
+            "timeout": 5
           }
         ]
       }
@@ -443,6 +454,8 @@ EOF
 # Add to gitignore
 echo "CLAUDE.local.md" >> .gitignore
 echo ".claude/settings.local.json" >> .gitignore
+echo "# User config overrides (personal, not shared)" >> .gitignore
+echo "~/.claude/config/" >> .gitignore
 
 # --- Lefthook (pre-commit gate) ---
 if [ -f "$SCRIPT_DIR/templates/common/lefthook.yml" ]; then

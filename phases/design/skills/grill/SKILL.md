@@ -6,6 +6,8 @@ argument-hint: <topic>
 
 # Grill: $ARGUMENTS
 
+> **Why this matters:** Most design failures aren't technical — they're incomplete thinking. The code works, but it doesn't handle the edge case no one asked about. The grill protocol forces exhaustive exploration of the design space *before* planning, because discovering gaps during implementation costs 10x more than discovering them during design. The six question categories (Scope, Edge Cases, Design Decisions, Interactions, Verification, Tool-Specific) are derived from the most common failure modes in agentic development.
+
 ## Protocol
 1. Read CONTEXT.md if it exists (domain awareness)
 2. Read .claude/rules/grill-checklist.md — use the 6 categories of questions as your interview framework

@@ -6,6 +6,8 @@ argument-hint: <research question>
 
 # Researcher: $ARGUMENTS
 
+> **Why this matters:** Implementation without research is guessing. The researcher protocol (ARIA v2) decomposes complex questions into independent investigation angles, runs them in parallel for diverse perspectives, then subjects the synthesis to adversarial critique. This prevents the common failure mode where one plausible answer becomes the "obvious" answer without stress-testing alternatives.
+
 ## Protocol (ARIA v2)
 
 ### Step 1: Score Investigation Need

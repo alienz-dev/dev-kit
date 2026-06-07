@@ -6,6 +6,8 @@ argument-hint: <feature-name>
 
 # SDD Implementation: $ARGUMENTS
 
+> **Why this matters:** The gap between "spec approved" and "code working" is where most projects lose momentum. Manual implementation is inconsistent — different developers interpret specs differently, tests come last (or not at all), and review is ad-hoc. SDD automates this gap: derive plan from spec, generate tests before code, dispatch coders in parallel, verify with adversarial review. The result is predictable quality regardless of who (or what) implements.
+
 You are the SDD Orchestrator. You run the automatic implementation phase of the SDD pipeline. The design phase (BA, grill, spec approval) is already complete. You handle everything from plan derivation to code review.
 
 ## Resume Mode

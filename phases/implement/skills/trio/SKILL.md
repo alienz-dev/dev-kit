@@ -6,6 +6,8 @@ argument-hint: <feature-name>
 
 # Trio Sprint: $ARGUMENTS
 
+> **Why this matters:** Not every implementation run needs the full SDD lifecycle. When tests already exist and you just need to implement, the trio sprint runs the wave-dispatch → green gate → review pipeline without re-deriving the plan or re-generating tests. This is the "fast path" for re-runs and incremental work.
+
 This is a thin wrapper around the wave-implement workflow. It runs only the implementation sprint phase (Test → Implement → Review), not the full SDD lifecycle.
 
 ## When to use

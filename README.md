@@ -1,39 +1,23 @@
 # dev-kit
 
-A portable development toolkit for AI-assisted software projects. Extracted from real production experience — not theoretical.
+A portable AI-native development toolkit. 24 skills, 6 hooks, spec-driven development, and multi-agent orchestration — all in markdown and bash.
 
 ## What This Is
 
-A repo you clone on a fresh machine to bootstrap a full AI-native development environment:
-- Coding agent integration (Claude Code primary)
-- Spec-driven development with EARS acceptance criteria
-- Multi-agent orchestration (supervisor → test-manager → sprint-manager → coder)
-- ARIA v2 research protocol (parallel explorers + adversarial critic)
-- Tiered code review (3 tiers, auto-promotion for sensitive paths)
-- UI visual quality gates (static analysis + Playwright regression + axe-core accessibility)
-- Data analyst agent (sandboxed iterative analysis)
-- Issue tracking with lifecycle gates
-- Session management and persistence
-- Hot-memory and workspace state
+A toolkit you clone to bootstrap AI-assisted development in any project:
+- **24 agent skills** covering the full SDLC (design → implement → review)
+- **Spec-driven development** with EARS acceptance criteria and automated pipelines
+- **Multi-agent orchestration** with parallel dispatch, worktree isolation, quality gates
+- **Confidence-scored routing** for intelligent skill selection
+- **Three-layer customization** (skill defaults → project → user)
+- **6 safety hooks** blocking dangerous operations and enforcing workflow discipline
+- **Meta-skills** for health checks, audits, and pre-commit validation
 
 ## What This Is NOT
 
 - Not a framework or library to import
-- Not tied to any specific LLM provider or agent CLI
+- Not tied to any specific LLM provider
 - Not opinionated about your application's architecture
-
-## Language & Tooling
-
-The scaffold generates **TypeScript + Vitest + Node 22** projects by default. This is a
-starting point based on what the toolkit was built with, not a hard constraint.
-
-**To adapt for other languages (Python, Rust, Go, etc.):**
-- Replace `package.json` / `tsconfig.json` / `vitest.config.ts` generation in `scaffold.sh`
-- Update `templates/common/lefthook.yml` pre-commit hooks for your test runner
-- Modify the code style section in `templates/common/AGENTS.md.template`
-
-The agent infrastructure (CLAUDE.md, .claude/ config, workflow methodology, quality gates)
-is language-agnostic and works with any stack.
 
 ## Quick Start
 
@@ -41,165 +25,190 @@ is language-agnostic and works with any stack.
 git clone <this-repo> ~/dev-kit
 cd ~/dev-kit
 
-# Minimal setup (recommended — works with any AI tool)
-./setup.sh --minimal    # just node + git + directories
-./scaffold.sh <name> --minimal  # AGENTS.md + CLAUDE.md + lefthook + pipeline state
+# Install global skills (available in every Claude Code session)
+./setup.sh
 
-# Full setup (multi-agent orchestration + submodules)
-./setup.sh              # interactive — detects OS, installs deps, auto-inits submodules
-./scaffold.sh <name>    # create a new project with full infrastructure
+# Scaffold a new project with full infrastructure
+./scaffold.sh <project-name>
 
-# Check what's missing without installing
-./setup.sh --check
+# Or retrofit an existing project
+./scaffold.sh here
 ```
 
-> **Note:** `tools/issue-cli` is an optional submodule.
-> Update `.gitmodules` with your own repository URL, or remove the submodule
-> if you don't need it. The core toolkit works without it.
+## Skills
 
-### Start coding
+### Global Skills (18 — available in every session)
 
-```bash
-cd ~/projects/<name>
-claude              # Claude Code reads CLAUDE.md automatically
+| Skill | Purpose | Trigger |
+|-------|---------|---------|
+| `/orient` | Map codebase structure, tech stack, architecture | "what is this", "how does this work" |
+| `/grill` | Design tree interview — exhaustive Q&A | "design X", "let's think about X" |
+| `/researcher` | Deep investigation with parallel explorers | "research X", "investigate X" |
+| `/debug` | Dispatch debugger subagent | "this is broken", "tests failing" |
+| `/quick-review` | Lightweight code review | "review this", "check this PR" |
+| `/security-audit` | OWASP Top 10, auth, crypto, secrets | "security audit", "check vulnerabilities" |
+| `/dep-audit` | CVEs, licenses, supply chain | "check dependencies", "npm audit" |
+| `/perf-profile` | N+1 queries, bottlenecks, caching | "this is slow", "optimize" |
+| `/tech-debt` | Dead code, complexity, pattern drift | "tech debt", "code health" |
+| `/docs` | API docs, README, onboarding guides | "document this", "write docs" |
+| `/release` | Changelog, version bump, pre-flight | "release", "changelog" |
+| `/a11y` | WCAG 2.1 AA compliance | "accessibility", "WCAG" |
+| `/api-design` | REST conventions, versioning | "design API", "new endpoint" |
+| `/health` | Parallel health agents, weighted scoring | "health check", "project health" |
+| `/audit` | Deep security-focused audit | "full audit", "compliance" |
+| `/pre-commit` | Pre-commit validation | "pre-commit", "ready to commit" |
+| `/status` | Quick inline status check | "status", "are we good" |
+| `/scaffold` | Scaffold new project | "scaffold", "new project" |
+
+### SDD Skills (6 — scaffolded projects only)
+
+| Skill | Purpose | Trigger |
+|-------|---------|---------|
+| `/sdd` | Full SDD pipeline: plan → test → code → review → retro | "implement X" |
+| `/trio` | Sprint-only wave dispatch | "run sprint" |
+| `/approve` | Approve spec for implementation | "approve spec" |
+| `/ba-validate` | Validate spec quality | "validate spec" |
+| `/spec-align` | Compare spec vs code | "spec alignment" |
+| `coder-safety` | Safety rules (auto-loaded) | — |
+
+## Features
+
+### Spec-Driven Development (SDD)
+
+Features are built through a 3-phase lifecycle:
+
+```
+Design (interactive) → Implementation (automatic) → Review (human)
 ```
 
-## Modes
+1. **Design**: `/grill` explores the design space, BA gathers requirements, user approves spec
+2. **Implementation**: `/sdd` derives plan, generates tests, dispatches coders in parallel, runs review
+3. **Review**: User evaluates results, files issues, re-runs `/sdd` for fixes
 
-| Mode | What You Get | Requires |
-|------|-------------|----------|
-| Full | Multi-agent orchestration, all gates | claude |
-| Minimal | AGENTS.md + CLAUDE.md, lefthook pre-commit, file-based pipeline | git, node, any AI coding tool |
-| Check | Reports missing tools, installs nothing | bash |
+### Confidence-Scored Routing
 
-See [docs/DEGRADED-MODE.md](docs/DEGRADED-MODE.md) for details on the 3 levels.
+Before invoking a skill, the system evaluates 5 signals:
 
-## Structure
+| Signal | Weight | What It Measures |
+|--------|--------|-----------------|
+| Keyword match | 30% | Does the request match a skill trigger? |
+| Intent clarity | 25% | Is the request unambiguous? |
+| Context available | 20% | Do referenced files/concepts exist? |
+| Precedent | 15% | Has this pattern been routed before? |
+| Risk (inverse) | 10% | Is the action low-risk? |
+
+| Score | Action |
+|-------|--------|
+| ≥ 0.85 | Auto-proceed |
+| 0.70–0.84 | Proceed, log decision |
+| 0.50–0.69 | Ask user to confirm |
+| < 0.50 | Explore first, then re-score |
+
+### Three-Layer Customization
+
+Skills support configuration overrides without forking:
+
+```
+Skill defaults (config.default.md)
+  ↓
+Project overrides (.claude/config/{skill}.md)
+  ↓
+User overrides (~/.claude/config/{skill}.md)
+```
+
+**Merge rules**: scalars override, tables deep-merge, arrays append.
+
+**Configurable fields**: `model`, `strictness`, `scope`, `thresholds`, `custom_rules`, `output_format`, `persistent_facts`.
+
+**Example** — project-level security-audit config:
+```yaml
+# .claude/config/security-audit.md
+---
+strictness: paranoid
+scope:
+  include: ["src/auth/**", "src/api/**"]
+custom_rules:
+  - "All auth endpoints must have rate limiting"
+  - "JWT tokens must use RS256, not HS256"
+---
+```
+
+### Safety Hooks
+
+6 PreToolUse hooks enforce workflow discipline:
+
+| Hook | Blocks | Purpose |
+|------|--------|---------|
+| `block-dangerous.sh` | rm -rf, git push --force, sudo, mkfs | Prevent destructive commands |
+| `orchestrator-dispatch-gate.sh` | Edit/Write on main thread | Force delegation to subagents |
+| `check-spec-approval.sh` | Spec writes without approval | Enforce SDD gates |
+| `check-briefing.sh` | Agents without briefing | Ensure proper context |
+| `block-spec-read.sh` | Reading specs in implement phase | Enforce information barrier |
+| `verify-tests.sh` | Session end with failing tests | Catch regressions |
+
+### Meta-Skills
+
+| Skill | What It Does | Speed |
+|-------|-------------|-------|
+| `/health quick` | Inline checks (build, lint, types, tests) | ~15s |
+| `/health full` | Parallel agents (security, deps, perf, debt) + weighted scoring | ~2min |
+| `/audit` | Deep security-focused audit (security + deps + debt) | ~3min |
+| `/pre-commit` | Lint, types, tests, security scan on staged changes | ~30s |
+| `/status` | Inline status — build, types, lint, tests, git | ~5s |
+
+### Research-Validated Patterns
+
+Patterns adopted from leading frameworks:
+
+| Pattern | Source | What It Does |
+|---------|--------|-------------|
+| `Why_This_Matters` | oh-my-claudecode | Explains reasoning behind every constraint |
+| Dispatcher pattern | dev-kit original | Triage → spawn subagent → structured report |
+| Tool restrictions | TapAgents | PreToolUse hook enforces orchestrator-dispatches |
+| Config layers | BMAD-METHOD | Three-layer customization without forking |
+| Confidence routing | TapAgents | Score routing decisions, surface uncertainty |
+| Parallel health | vibecosystem | Fan-out agents, file-based aggregation |
+
+## Architecture
 
 ```
 dev-kit/
-├── README.md
-├── CLAUDE.md                   # Project instructions for Claude Code
-├── setup.sh                    # Machine bootstrap (idempotent)
-├── scaffold.sh                 # New project generator
-├── sync.sh                     # Re-sync base files into scaffolded projects
+├── scaffold.sh              # Project generator
+├── setup.sh                 # Machine bootstrap
+├── sync.sh                  # Re-sync base files
+├── CLAUDE.md                # Project instructions
 │
-├── .claude/                    # Claude Code project config
-│   ├── settings.json           # Permissions
-│   ├── commands/               # Slash commands (/scaffold, /setup, /test-gates)
-│   └── workflows/              # Workflow scripts (adversarial-review, wave-implement, etc.)
+├── phases/                  # Skills organized by development phase
+│   ├── design/skills/       # orient, grill, researcher, approve, ba-validate, spec-align
+│   ├── implement/skills/    # sdd, trio, debug, coder-safety
+│   ├── review/skills/       # 14 review + meta skills
+│   └── shared/              # Hooks, rules, config-resolution
 │
-├── phases/                     # Agent configs organized by development phase
-│   ├── design/                 # Phase 1: Design (interactive)
-│   │   ├── agents/             # BA, Architect, Researcher, Explorer, Research-Critic
-│   │   ├── rules/              # grill-checklist
-│   │   └── skills/             # grill, ba-validate, approve, spec-align
-│   ├── implement/              # Phase 2+3: Test + Implement (automated)
-│   │   ├── agents/             # Coder, Test-Manager, Tester
-│   │   ├── rules/              # coder-safety, wave-execution, implementation-briefing
-│   │   ├── skills/             # sdd (orchestrator), coder-safety, trio (alias)
-│   │   └── hooks/              # block-spec-read, check-briefing
-│   ├── review/                 # Phase 4: Review (automated)
-│   │   ├── agents/             # Reviewer, Reviewer-Lite
-│   │   └── gates/              # 8 gate scripts + __tests__/
-│   └── shared/                 # Cross-cutting (all phases)
-│       ├── rules/              # client_rules, CONSOLIDATED, HANDOFF, ROLES, complexity-scoring
-│       ├── hooks/              # block-dangerous, check-spec-approval, verify-tests
-│       ├── skills/             # compaction-strategy, testing-patterns, typescript-patterns
-│       └── context-files/      # session-routing, user-profile
+├── templates/               # Project templates
+│   └── common/              # AGENTS.md.template, lefthook.yml, .claude/
 │
-├── core/                       # Core infrastructure
-│   └── coding-agent/           # Agent CLI integration adapters
-│
-├── docs/                       # Documentation
-│   ├── ARCHITECTURE.md
-│   ├── USER-GUIDE.md
-│   ├── TROUBLESHOOTING.md
-│   └── archive/                # Archived: PLAN.md, TRIO.md, foundation-fixes specs
-│
-├── infra/scripts/              # Utility scripts (env-detect, hot-memory, start/stop)
-├── issues/                     # Issue tracking (markdown) + templates
-├── specs/                      # Feature specs and implementation plans
-├── templates/                  # Project templates (lefthook, AGENTS.md.template, visual-testing)
-├── tools/                      # Standalone tooling (issue-cli, ui-visual-check, explainer)
-│
-└── workflow/                   # Process docs + pipeline FSM
-    ├── sdd/                    # SDD methodology (absorbs TRIO), spec tools
-    ├── pipeline/               # gate.sh, transitions.json, checkpoint.sh
-    └── dynamic-workflows-analysis.md
+├── .claude/workflows/       # Dynamic workflow scripts
+├── workflow/                # SDD methodology docs
+├── tools/                   # Standalone tooling
+└── docs/                    # Documentation
 ```
 
-## Agent Hierarchy
+## Conventions
 
-```
-User
-  └── Planner/Supervisor (orchestrator, persistent)
-        ├── Researcher (ARIA v2 orchestrator)
-        │     ├── Explorer ×N (parallel)
-        │     └── Research-Critic (adversarial)
-        ├── UI-Designer (Phase 0, score 6+ UI)
-        ├── Test-Manager (RED gate — persistent)
-        └── Sprint-Manager (GREEN→REVIEW — ephemeral)
-              ├── Coder ×N (parallel)
-              ├── Reviewer-Lite (Tier 2)
-              └── Reviewer (Tier 3)
-```
+- Shell scripts: bash, `set -euo pipefail`, idempotent
+- Skills: markdown with YAML frontmatter, dispatcher pattern
+- Hooks: bash, receive JSON on stdin, exit 0 = allow, exit 2 = block
+- Config: YAML frontmatter in markdown, LLM-as-resolver (no Python dependency)
 
-### Workflow Orchestration
+## Language Bias
 
-In addition to subagent-based orchestration, the toolkit supports Claude Code's
-dynamic workflows for automated phases. The hybrid model uses:
-- **Skills** for interactive phases (grill, approval, spec review)
-- **Workflows** for automated phases (test gen, coder dispatch, review, retro)
-- **gate.sh** for filesystem enforcement (proof files, state transitions)
-- **Hooks** for git enforcement (pre-commit checks)
+Default: TypeScript + Vitest. To adapt:
+- Replace `package.json` / `tsconfig.json` / `vitest.config.ts` in `scaffold.sh`
+- Update `templates/common/lefthook.yml` pre-commit hooks
+- Modify `templates/common/AGENTS.md.template` code style section
 
-See `workflow/dynamic-workflows-guide.md` for the complete guide.
+The agent infrastructure is language-agnostic.
 
-## Pipeline (gate.sh + lefthook)
+## License
 
-```
-plan → test → sprint → review → done | failed
-```
-
-Gates per wave: `trio-preflight → GREEN → wiring → visual → wave-smoke`
-After all waves: `hidden → activation → review`
-
-> **Dynamic Workflows**: The sprint stage can be driven by the `wave-dispatch` workflow
-> for automated parallel coder dispatch. See `workflow/dynamic-workflows-guide.md`.
-
-## SDD Commands (Claude Code Skills)
-
-The SDD system runs in three phases: **Design** (interactive) → **Implementation** (automatic) → **Review** (human).
-
-| Command | Phase | What It Does |
-|---------|-------|-------------|
-| `<description>` | Design | Describe what you want, agent gathers requirements |
-| `/grill <topic>` | Design | Interactive design interview (Q&A with user) |
-| `/ba-validate <spec>` | Design | Validate spec quality (structural + semantic) |
-| `/approve <spec>` | Design | Approve spec for implementation |
-| `/sdd <feature>` | Implementation | Run full pipeline (automatic, no human needed) |
-| `/sdd resume <feature>` | Implementation | Resume failed pipeline from current stage |
-| `/spec-align <spec>` | Maintenance | Compare spec vs code, find divergences |
-| `/researcher <question>` | Research | Deep investigation (parallel explorers) |
-| `ultracode: <task>` | Workflow | Trigger a dynamic workflow for a specific task |
-| `/adversarial-review` | Workflow | Multi-angle code review with adversarial verification |
-| `/wave-implement` | Workflow | TRIO-style wave dispatch with worktree isolation |
-| `/deep-audit` | Workflow | Comprehensive codebase audit |
-| `/research-crosscheck` | Workflow | Multi-angle research with cross-checked sources |
-| `/migration-sweep` | Workflow | Codebase-wide migration pipeline |
-| `/sdd-implement` | Workflow | Full SDD implementation via workflows |
-
-### Workflow
-
-```
-1. User: "add dark mode"
-2. Agent: gathers requirements, asks design questions
-3. User: answers questions, approves spec
-4. User: "/sdd dark-mode"
-5. Agent: runs implementation automatically
-6. User: reviews result, files issues if needed
-7. User: "/sdd dark-mode" again for fixes
-```
-
-See [docs/USER-GUIDE.md](docs/USER-GUIDE.md) for detailed usage.
+MIT

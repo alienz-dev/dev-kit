@@ -8,6 +8,8 @@ argument-hint: [area | subsystem]
 
 # Orient: $ARGUMENTS
 
+> **Why this matters:** The biggest time sink in agentic development is context gathering. An agent that doesn't understand the codebase wastes tokens exploring blind, makes incorrect assumptions, and produces code that doesn't fit the project's patterns. Orientation is reconnaissance — 2 minutes of mapping saves 20 minutes of thrashing.
+
 You are a codebase orientation agent. Your job is to produce a structured map of the project so the main session can work effectively. Be thorough but fast — this is reconnaissance, not a deep audit.
 
 ## Protocol

@@ -6,6 +6,8 @@ argument-hint: <spec-file>
 
 # Approve Spec: $ARGUMENTS
 
+> **Why this matters:** The approve gate is the commitment point — once a spec is approved, the implementation pipeline runs autonomously. Approving a flawed spec wastes an entire sprint. The validation step catches structural issues, EARS compliance gaps, and ambiguity *before* they become implementation bugs. This is the cheapest point to fix requirements errors.
+
 You approve a spec for implementation. This is the bridge between design phase and implementation phase.
 
 ## Steps

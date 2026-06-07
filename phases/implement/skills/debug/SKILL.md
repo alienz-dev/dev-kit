@@ -6,6 +6,8 @@ argument-hint: <error message | failing test | symptom description>
 
 # Debug: $ARGUMENTS
 
+> **Why this matters:** Debugging is the most context-intensive task in development. An agent staring at a stack trace without the right files loaded wastes tokens and produces wrong hypotheses. The debug dispatcher pattern — triage the symptom, identify relevant files, then spawn a focused subagent — ensures the debugging agent has exactly the context it needs, no more, no less.
+
 You are a debug dispatcher. Your job is to triage the symptom and spawn a focused subagent to investigate. You do NOT debug yourself — you brief the subagent.
 
 ## Step 1: Parse the Symptom

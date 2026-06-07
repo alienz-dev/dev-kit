@@ -39,6 +39,22 @@ Features are built through a 3-phase lifecycle. **Do not skip phases.**
 | `/orient [area]` | Map codebase structure, tech stack, commands, architecture |
 | `/quick-review <target>` | Lightweight review — files, diffs, or PRs. Escalate to `/adversarial-review` for complex changes |
 | `/debug <error>` | Dispatch a debugger subagent to investigate a bug |
+| `/status` | Quick project status — build, types, lint, tests, git (inline, no subagent) |
+| `/pre-commit` | Pre-commit checks — lint, types, tests, security scan on staged changes |
+
+### Health & Audit Commands
+| Command | Description |
+|---------|-------------|
+| `/health [quick\|full]` | Project health dashboard — quick (inline) or full (parallel agents, weighted scoring) |
+| `/audit [full\|security\|compliance]` | Deep security-focused audit — security + deps + tech debt |
+| `/security-audit <scope>` | Security vulnerability scan — OWASP Top 10, auth, crypto, secrets |
+| `/dep-audit [scope]` | Dependency audit — CVEs, licenses, supply chain, outdated packages |
+| `/perf-profile <scope>` | Performance profiling — N+1 queries, algorithmic bottlenecks, caching |
+| `/tech-debt [scope]` | Technical debt analysis — dead code, complexity, pattern drift |
+| `/a11y <scope>` | Accessibility audit — WCAG 2.1 AA compliance, keyboard nav, ARIA |
+| `/api-design <scope>` | API design review — REST conventions, versioning, backward compat |
+| `/release [version]` | Release engineering — changelog, version bump, pre-flight checks |
+| `/docs <scope>` | Documentation writer — API docs, README, onboarding guides |
 
 ### Workflow Commands (Dynamic)
 These use Claude Code's dynamic workflows for automated parallel orchestration:
@@ -49,6 +65,70 @@ These use Claude Code's dynamic workflows for automated parallel orchestration:
 | `/deep-audit` | Comprehensive codebase audit |
 | `/research-crosscheck` | Multi-angle research with cross-checked sources |
 | `/migration-sweep` | Codebase-wide migration pipeline |
+
+## Confidence-Scored Routing
+
+Before invoking a skill, evaluate routing confidence. This prevents misroutes on ambiguous requests.
+
+### Scoring Rubric
+
+| Signal | Weight | How to evaluate |
+|--------|--------|-----------------|
+| **Keyword match** | 0.30 | Exact trigger hit = 1.0, partial = 0.5-0.8, none = 0.0 |
+| **Intent clarity** | 0.25 | Single clear action = 1.0, multiple possible = 0.3-0.6, vague = 0.0-0.2 |
+| **Context available** | 0.20 | All refs exist = 1.0, some missing = 0.4-0.7, most missing = 0.0-0.3 |
+| **Precedent** | 0.15 | Routed before = 1.0, similar = 0.5-0.8, novel = 0.0-0.3 |
+| **Risk (inverse)** | 0.10 | Read-only = 1.0, destructive = 0.0 |
+
+### Thresholds
+
+| Score | Action |
+|-------|--------|
+| **≥ 0.85** | Auto-proceed with matched skill |
+| **0.70 – 0.84** | Proceed, log the routing decision |
+| **0.50 – 0.69** | Ask user to confirm or clarify |
+| **< 0.50** | Spawn explorer (orient) to gather context, then re-score |
+
+### Examples
+
+| Request | Score | Action |
+|---------|-------|--------|
+| "review this PR" | 0.97 | Auto: quick-review |
+| "fix the failing tests" | 0.85 | Auto: debug |
+| "the auth is broken" | 0.56 | Ask: debug or security-audit? |
+| "make this better" | 0.27 | Explore: orient first |
+| "deploy to prod" | 0.15 | Surface: no skill exists |
+
+## Auto-Routing
+
+**Do not wait for the user to type `/skill-name`.** When the user's message matches a skill's trigger pattern, invoke it automatically via the Skill tool.
+
+| User Intent (keywords/phrases) | Auto-Invoke | Example |
+|-------------------------------|-------------|---------|
+| "what is this", "how does this work", "where is X" | `/orient` | "how does auth work?" → `/orient auth` |
+| "design X", "let's think about", "explore options" | `/grill` | "let's design the API" → `/grill API design` |
+| "research X", "investigate", "compare X vs Y" | `/researcher` | "research caching" → `/researcher caching strategies` |
+| "this is broken", "fix this bug", "tests failing", error traces | `/debug` | "TypeError at auth.ts:42" → `/debug TypeError` |
+| "review this", "look at this code", "check this PR" | `/quick-review` | "review auth module" → `/quick-review src/auth/` |
+| "security", "vulnerability", "injection", "check for secrets" | `/security-audit` | "check auth vulns" → `/security-audit src/auth` |
+| "dependencies", "npm audit", "outdated", "CVE in deps" | `/dep-audit` | "any CVEs?" → `/dep-audit` |
+| "slow", "performance", "N+1", "optimize", "bottleneck" | `/perf-profile` | "this is slow" → `/perf-profile <file>` |
+| "tech debt", "dead code", "cleanup", "code health" | `/tech-debt` | "what needs cleanup?" → `/tech-debt` |
+| "document", "write docs", "API docs", "README" | `/docs` | "document the API" → `/docs API` |
+| "release", "changelog", "version bump" | `/release` | "prepare release" → `/release` |
+| "accessibility", "WCAG", "a11y" | `/a11y` | "check a11y" → `/a11y` |
+| "design API", "new endpoint", "API contract" | `/api-design` | "design user API" → `/api-design users` |
+| "health", "how healthy", "full picture" | `/health` | "how's the project?" → `/health` |
+| "full audit", "compliance" | `/audit` | "audit everything" → `/audit` |
+| "pre-commit", "ready to commit" | `/pre-commit` | "am I good?" → `/pre-commit` |
+| "status", "are we good", "quick check" | `/status` | "quick status" → `/status` |
+
+**Routing rules:**
+1. Match on **intent**, not exact phrasing. "this is slow" = "optimize" = "performance"
+2. If multiple skills match, pick the **most specific** one
+3. If the user says "implement X" and a spec exists, route to `/sdd`
+4. If the user says "implement X" and no spec exists, route to `/grill` first
+5. When in doubt, `/orient` first to understand the codebase, then re-route
 
 ## Agent Roles
 
