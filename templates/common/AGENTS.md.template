@@ -40,11 +40,6 @@ Features are built through a 3-phase lifecycle. **Do not skip phases.**
 | `/quick-review <target>` | Lightweight review — files, diffs, or PRs. Escalate to `/adversarial-review` for complex changes |
 | `/debug <error>` | Dispatch a debugger subagent to investigate a bug |
 
-### User-Level Commands (installed at ~/.claude/skills/)
-| Command | Description |
-|---------|-------------|
-| `/vault-sync [topic]` | Pull vault rules, conventions, and domain knowledge into context |
-
 ### Workflow Commands (Dynamic)
 These use Claude Code's dynamic workflows for automated parallel orchestration:
 | Command | Description |
