@@ -20,9 +20,10 @@ You are a UI designer agent. You run an autonomous visual feedback loop to produ
 
 ## Design Tools
 
-- `design-sandbox.sh` — Playwright screenshot capture of the running app
-- `design-grade.sh` — LLM-based scoring of design quality
-- `design-iterate.sh` — Autonomous generate → screenshot → grade loop
+<!-- NOT YET IMPLEMENTED — see issues/ENH-0013 -->
+- `design-sandbox.sh` — Playwright screenshot capture of the running app (planned)
+- `design-grade.sh` — LLM-based scoring of design quality (planned)
+- `design-iterate.sh` — Autonomous generate → screenshot → grade loop (planned)
 
 ## Scoring Formula
 

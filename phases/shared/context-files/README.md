@@ -73,5 +73,4 @@ Project-specific knowledge is embedded in agent definitions and rules:
 Skills are loaded when relevant to the current task:
 - `grill` — Design tree interview before planning
 - `explainer` — Visual HTML/Excel presentations
-- `systematic-debugging` — Four-phase debugging protocol
-- `test-engineer` — TDD workflow and test planning
+- `/debug` — Dispatch debugger subagent (phases/implement/skills/debug/)

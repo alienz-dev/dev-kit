@@ -684,7 +684,7 @@ Every role has a **contract** defining its boundaries:
 ```
 # Dispatch
 Agent({ prompt: "Make these tests pass: tests/unit/pagination.test.ts", subagent_type: "general-purpose" })
-Agent({ prompt: "Own RED gate for PROJ-042", subagent_type: "general-purpose" })
+Agent({ prompt: "Own RED gate for PROJECT-042", subagent_type: "general-purpose" })
 Agent({ prompt: "Review PR #42", subagent_type: "general-purpose" })
 
 # Background dispatch (completion tracking)

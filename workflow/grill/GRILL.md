@@ -70,10 +70,10 @@ On completion:
 
 ## When NOT to Use
 
-- Simple bug fixes (use systematic-debugging)
+- Simple bug fixes (use /debug)
 - Tasks with score 0-3 (plan directly, no grilling needed)
 - When the user already has a clear spec and just wants execution
 
 ## Related
 - [[skills/planner-rules/SKILL|Planner Rules]] — grill feeds into Phase 0 Clarify
-- [[skills/deep-research/deep-research|Deep Research]] — for when grilling reveals unknown territory
+- [[skills/researcher/SKILL|Researcher]] — for when grilling reveals unknown territory

@@ -60,10 +60,10 @@ ultracode: migrate all TypeScript files from interface to type aliases
 ### 3. Cross-checked research
 
 ```
-/deep-research What are the trade-offs between Drizzle and Prisma in 2026?
+/researcher What are the trade-offs between Drizzle and Prisma in 2026?
 ```
 
-**Why workflow**: Multiple search angles, source cross-checking, claim voting. The bundled `/deep-research` workflow does exactly this.
+**Why workflow**: Multiple search angles, source cross-checking, claim voting. Use the `/researcher` skill (ARIA v2 protocol) for this.
 
 ### 4. Adversarial code review
 
@@ -428,7 +428,7 @@ Workflow({ scriptPath: '...', resumeFromRunId: 'wf_...' })
 |--------|---------|-------|
 | Keyword | `ultracode: audit auth` | One task |
 | Effort | `/effort ultracode` | Session |
-| Bundled | `/deep-research question` | One task |
+| Skill | `/researcher question` | One task |
 | Saved | `/workflow-name args` | Reusable |
 
 ### Script primitives

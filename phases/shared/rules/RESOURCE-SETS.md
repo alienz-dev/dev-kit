@@ -82,7 +82,7 @@ Defines what context each agent role loads. In Claude Code, agent definitions li
 ### UI-Designer (Subagent)
 - `phases/design/agents/ui-designer.md` — visual feedback loop protocol
 - Spec and existing UI (from prompt)
-- Design tools: design-sandbox.sh, design-grade.sh, design-iterate.sh
+- Design tools: design-sandbox.sh, design-grade.sh, design-iterate.sh (NOT YET IMPLEMENTED — see issues/ENH-0013)
 
 ### Data-Analyst (Subagent)
 - `phases/design/agents/data-analyst.md` — iterative analysis protocol

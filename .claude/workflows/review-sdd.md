@@ -19,7 +19,7 @@ const reviews = await parallel([
     { label: 'review:trio-gates', phase: 'Review', schema: { type: 'object', properties: { findings: { type: 'array', items: { type: 'object', properties: { title: { type: 'string' }, severity: { type: 'string', enum: ['critical', 'major', 'minor'] }, description: { type: 'string' } } } } }, required: ['findings'] } }
   ),
   () => agent(
-    `Review the pipeline enforcement in /Users/ding/projects/dev-kit/workflow/pipeline/ — focus on what IS code-enforced (gate.sh, lefthook) vs what is prompt-only (role spawn, write scope, stall detection). Read PIPELINE-ENFORCEMENT.md and gate.sh. Identify the biggest enforcement gaps.`,
+    `Review the pipeline enforcement in workflow/pipeline/ — focus on what IS code-enforced (gate.sh, lefthook) vs what is prompt-only (role spawn, write scope, stall detection). Read PIPELINE-ENFORCEMENT.md and gate.sh. Identify the biggest enforcement gaps.`,
     { label: 'review:enforcement', phase: 'Review', schema: { type: 'object', properties: { findings: { type: 'array', items: { type: 'object', properties: { title: { type: 'string' }, severity: { type: 'string', enum: ['critical', 'major', 'minor'] }, description: { type: 'string' } } } } }, required: ['findings'] } }
   ),
 ])

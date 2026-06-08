@@ -98,11 +98,11 @@ Sprint-manager reads `## Review Tier: N` from its briefing (set by supervisor ba
 ```
 # Claude Code
 Agent(reviewer-lite: "Review wave 1 changes")   # Tier 2
-Agent(reviewer: "Full review for PROJ-042")      # Tier 3
+Agent(reviewer: "Full review for PROJECT-042")      # Tier 3
 
 # File-based dispatch
 Agent(reviewer-lite: "Review wave 1 changes")   # Tier 2
-Agent(reviewer: "Full review for PROJ-042")      # Tier 3
+Agent(reviewer: "Full review for PROJECT-042")      # Tier 3
 ```
 
 ## Timeout Behavior
