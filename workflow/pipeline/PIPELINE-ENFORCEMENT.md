@@ -31,7 +31,7 @@ Three-tier enforcement model for pipeline stages, role boundaries, and behaviora
 ## Pipeline Stages
 
 ```
-plan → test → sprint → review → done | failed
+plan → test → sprint → review → retro → done | failed
 ```
 
 ## Transitions and Signals
@@ -41,7 +41,8 @@ plan → test → sprint → review → done | failed
 | plan | test | `plan_ready` | Supervisor completes spec |
 | test | sprint | `tests_ready` | Test-manager confirms RED |
 | sprint | review | `sprint_complete` | Sprint-manager passes all gates |
-| review | done | `review_complete` | Reviewer approves |
+| review | retro | `review_complete` | Reviewer approves |
+| retro | done | `retro_complete` | Retro findings classified and routed |
 | any | failed | `stage_failed` | Max retries exhausted |
 
 ## Recovery Transitions
@@ -51,6 +52,7 @@ plan → test → sprint → review → done | failed
 | failed | plan | `retry_plan` | Spec needs revision |
 | failed | test | `retry_test` | Tests need rewriting |
 | failed | sprint | `retry_sprint` | Implementation retry |
+| retro | plan | `retro_to_plan` | Retro identifies spec issues |
 
 ## Role Policies (Prompt-Enforced)
 
@@ -83,7 +85,7 @@ Some spawns are only allowed during specific pipeline stages:
 
 ```bash
 # File-based pipeline (no daemon required)
-bash workflow/pipeline/gate.sh init PROJ-042
+bash workflow/pipeline/gate.sh init PROJECT-042
 bash workflow/pipeline/gate.sh advance tests_ready
 bash workflow/pipeline/gate.sh status
 bash workflow/pipeline/gate.sh check sprint
@@ -98,9 +100,12 @@ There is no active stall detection. If the pipeline stalls, the supervisor must 
 Pipeline state stored in file-based JSON (no SQLite, no daemon):
 ```json
 {
-  "id": "PROJ-042",
+  "id": "PROJECT-042",
   "stage": "sprint",
-  "transitions": ["plan→test", "test→sprint"]
+  "history": [
+    {"from": "plan", "to": "test", "at": "2026-01-01T00:00:00Z", "signal": "plan_ready"},
+    {"from": "test", "to": "sprint", "at": "2026-01-01T01:00:00Z", "signal": "tests_ready"}
+  ]
 }
 ```
 

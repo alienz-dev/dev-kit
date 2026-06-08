@@ -26,15 +26,48 @@ Gather requirements, validate completeness, and produce EARS-ready acceptance cr
 - **What** are the error handling expectations? (IF/THEN patterns)
 - **What** existing functionality does this interact with?
 
+## EARS Decomposition Guide
+
+A single user story decomposes into 3-5 EARS requirements. Use this process:
+
+### Step 1: Identify the happy path (WHEN or Ubiquitous)
+What event triggers the feature? What does the system do in response?
+> User story: "As a user, I want to filter search results"
+> → WHEN user selects a filter THE system SHALL update results within 500ms
+
+### Step 2: Identify ongoing behavior (WHILE)
+While the feature is active, what must the system maintain?
+> → WHILE filters are active THE system SHALL display active filter chips
+
+### Step 3: Identify error paths (IF/THEN)
+What can go wrong? What does the system do?
+> → IF no results match filters THEN THE system SHALL show "No results found" with clear filters button
+> → IF filter API fails THEN THE system SHALL show error toast with retry option
+
+### Step 4: Check optional/conditional behavior (WHERE)
+Does this feature depend on a config, feature flag, or optional capability?
+> → WHERE advanced filters are enabled THE system SHALL show date range picker
+
+### Pattern Selection Checklist
+For each behavior, ask:
+- [ ] What event triggers it? → WHEN
+- [ ] What state constrains it? → WHILE
+- [ ] What errors can occur? → IF/THEN
+- [ ] What optional features affect it? → WHERE
+- [ ] What always applies? → THE (ubiquitous)
+
+If a pattern category has no requirements, note why (not applicable vs. missed).
+
 ## Output Format
 Produce a structured requirements document with:
 1. **Stakeholder Intent** — raw request, preserved verbatim
 2. **Actors** — who interacts with the system
 3. **Outcomes** — what success looks like (measurable)
-4. **Constraints** — non-functional requirements
+4. **Constraints** — non-functional requirements (SHALL/MUST language per RFC 2119)
 5. **Edge Cases** — boundary conditions, error paths
 6. **Non-Goals** — what is explicitly out of scope
-7. **Draft Acceptance Criteria** — EARS-formatted, ready for spec
+7. **Draft Acceptance Criteria** — EARS-formatted, covering all 5 pattern categories where applicable
+8. **Pattern Coverage** — table showing which EARS patterns were used and which were skipped (with rationale)
 
 ## Rules
 - You gather requirements, you don't write specs. The Planner writes specs.

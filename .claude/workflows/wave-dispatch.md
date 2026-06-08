@@ -156,34 +156,33 @@ Fix the implementation until all tests pass.`,
   const changedFiles = coderResults.filter(Boolean).flatMap(r => r.result?.filesChanged || [])
   const hasUIFiles = changedFiles.some(f => /\.(tsx|jsx|vue|svelte|css|scss)$/.test(f))
 
-  let visualPassed = true
+  let visualPassed = !hasUIFiles  // skip if no UI files
   if (hasUIFiles) {
-    let visualRetries = 0
-    while (visualPassed === false && visualRetries < maxVisualRetries) {
-      visualRetries++
-    }
-    // Visual gate: run static analysis + accessibility checks
-    const visualCheck = await agent(
-      `Run the visual gate checks:
+    for (let visualAttempt = 1; visualAttempt <= maxVisualRetries; visualAttempt++) {
+      // Visual gate: run static analysis + accessibility checks
+      const visualCheck = await agent(
+        `Run the visual gate checks (attempt ${visualAttempt}/${maxVisualRetries}):
 1. Static analysis: stylelint if CSS/SCSS changed
 2. Accessibility: check for axe-core violations
 3. DOM checks: empty states, touch targets, overflow
 Changed files: ${changedFiles.filter(f => /\.(tsx|jsx|vue|svelte|css|scss)$/.test(f)).join(', ')}
 Project directory: ${projectDir}`,
-      {
-        label: `visual:w${waveNum}`,
-        phase: `Gates (Wave ${waveNum})`,
-        schema: {
-          type: 'object',
-          properties: {
-            pass: { type: 'boolean' },
-            issues: { type: 'array', items: { type: 'string' } },
+        {
+          label: `visual:w${waveNum}:${visualAttempt}`,
+          phase: `Gates (Wave ${waveNum})`,
+          schema: {
+            type: 'object',
+            properties: {
+              pass: { type: 'boolean' },
+              issues: { type: 'array', items: { type: 'string' } },
+            },
+            required: ['pass'],
           },
-          required: ['pass'],
-        },
-      }
-    )
-    visualPassed = visualCheck?.pass !== false
+        }
+      )
+      visualPassed = visualCheck?.pass !== false
+      if (visualPassed) break
+    }
     if (visualPassed) {
       await runGate(`proof visual "Wave ${waveNum}: visual checks passed"`, `proof:visual:w${waveNum}`)
     }

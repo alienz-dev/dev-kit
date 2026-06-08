@@ -42,7 +42,8 @@ echo ""
 
 # --- Check test coverage via spec-trace ---
 echo "Running test traceability check..."
-TRACE_OUTPUT=$(bash tools/spec-trace.sh tests/ specs/ 2>&1 || true)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+TRACE_OUTPUT=$(bash "$SCRIPT_DIR/../../tools/spec-trace.sh" tests/ specs/ 2>&1 || true)
 echo "$TRACE_OUTPUT"
 
 # Check for uncovered sections

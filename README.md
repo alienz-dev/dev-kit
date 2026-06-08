@@ -1,6 +1,6 @@
 # dev-kit
 
-A portable AI-native development toolkit. 24 skills, 6 hooks, spec-driven development, and multi-agent orchestration — all in markdown and bash.
+A portable AI-native development toolkit. 23 skills, 6 hooks, spec-driven development, and multi-agent orchestration — all in markdown and bash.
 
 ## What This Is
 
@@ -31,13 +31,13 @@ cd ~/dev-kit
 # Scaffold a new project with full infrastructure
 ./scaffold.sh <project-name>
 
-# Or retrofit an existing project
-./scaffold.sh here
+# Or retrofit an existing project (copy files manually, see docs/)
+# scaffold.sh generates new projects; for existing projects, copy templates/ contents
 ```
 
 ## Skills
 
-### Global Skills (18 — available in every session)
+### Global Skills (17 — available in every session)
 
 | Skill | Purpose | Trigger |
 |-------|---------|---------|
@@ -181,7 +181,7 @@ dev-kit/
 ├── phases/                  # Skills organized by development phase
 │   ├── design/skills/       # orient, grill, researcher, approve, ba-validate, spec-align
 │   ├── implement/skills/    # sdd, trio, debug, coder-safety
-│   ├── review/skills/       # 14 review + meta skills
+│   ├── review/skills/       # 13 review + meta skills
 │   └── shared/              # Hooks, rules, config-resolution
 │
 ├── templates/               # Project templates

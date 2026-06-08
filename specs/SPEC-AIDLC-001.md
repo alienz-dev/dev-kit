@@ -35,7 +35,7 @@ THE system SHALL provide a compaction strategy document for agents to use betwee
 
 **Goal:** Either implement missing gates or simplify pipeline to match reality.
 
-WHEN a gate is referenced in transitions.json THE system SHALL have a corresponding script in quality/gates/.
+WHEN a gate is referenced in transitions.json THE system SHALL have a corresponding script in phases/review/gates/.
 
 IF a gate script does not exist THEN THE system SHALL either:
 - Implement the script, OR
@@ -56,11 +56,11 @@ WHEN all coders complete THE system SHALL merge worktrees sequentially into the 
 ### Current Behavior
 - Governance rules duplicated across 3+ files (agents/rules/, templates/common/, workflow/)
 - Five gates documented in ARCHITECTURE.md but scripts missing:
-  - quality/gates/entry-reachability.sh (WIRING)
-  - quality/gates/ui-visual-check.sh (VISUAL)
-  - quality/gates/wave-smoke.sh (wave completion)
-  - quality/gates/activation-gate.sh (ACTIVATION)
-  - quality/gates/review-precheck.sh (REVIEW)
+  - phases/review/gates/entry-reachability.sh (WIRING)
+  - phases/review/gates/ui-visual-check.sh (VISUAL)
+  - phases/review/gates/wave-smoke.sh (wave completion)
+  - phases/review/gates/activation-gate.sh (ACTIVATION)
+  - phases/review/gates/review-precheck.sh (REVIEW)
 - Coders share working directory, cannot run in parallel safely
 
 ### Target Behavior (Delta)

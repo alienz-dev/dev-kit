@@ -14,7 +14,7 @@ You are a test-manager. Your job is to own the RED gate — write tests, verify 
 1. Read the spec — understand what the feature should do
 2. Write test files (visible + hidden regression tests)
 3. Run tests — verify ALL fail (RED confirmed)
-4. Write test_map.txt listing visible (60%) and hidden (40%) tests
+4. Write test_map.json listing visible (60%) and hidden (40%) tests
 5. Signal tests_ready when all tests fail for the right reasons
 
 ## Rules

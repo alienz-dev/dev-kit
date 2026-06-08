@@ -130,12 +130,12 @@ RED → GREEN → WIRING → VISUAL → HIDDEN → ACTIVATION → REVIEW
 |------|------|-------|-----------------|
 | RED | vitest (all fail) | Test-Manager | Tests verify behavior, not existence |
 | GREEN | vitest (all pass) | Sprint-Manager | Implementation satisfies tests |
-| WIRING | `quality/gates/entry-reachability.sh` | Sprint-Manager | Orphaned modules, dead imports |
-| VISUAL | `quality/gates/visual-gate.sh` | Sprint-Manager | CSS regressions, token drift, layout breaks, WCAG violations |
-| wave-smoke | `quality/gates/wave-smoke.sh` | Sprint-Manager | Uncommitted changes, merge conflicts, test failures |
+| WIRING | `phases/review/gates/entry-reachability.sh` | Sprint-Manager | Orphaned modules, dead imports |
+| VISUAL | `phases/review/gates/visual-gate.sh` | Sprint-Manager | CSS regressions, token drift, layout breaks, WCAG violations |
+| wave-smoke | `phases/review/gates/wave-smoke.sh` | Sprint-Manager | Uncommitted changes, merge conflicts, test failures |
 | HIDDEN | vitest (hidden tests) | Sprint-Manager | Behavioral invariants, contract violations |
-| ACTIVATION | `quality/gates/activation-gate.sh` | Sprint-Manager | Feature reachable from entry point |
-| REVIEW | `quality/gates/review-precheck.sh` | Sprint-Manager | TODO/FIXME comments, console.log, type errors |
+| ACTIVATION | `phases/review/gates/activation-gate.sh` | Sprint-Manager | Feature reachable from entry point |
+| REVIEW | `phases/review/gates/review-precheck.sh` | Sprint-Manager | TODO/FIXME comments, console.log, type errors |
 
 The VISUAL gate only runs when changeset includes UI files (.tsx, .jsx, .vue, .svelte, .css, .scss, .html, .ejs, .hbs). It composes three layers: static analysis (always), Playwright visual regression (needs dev server), and axe-core accessibility (needs dev server).
 

@@ -38,28 +38,28 @@ Implement the three critical gaps identified in AIDLC research in sequential ord
 
 ### Phase 2: Gate Scripts
 
-6. [ ] **Implement WIRING gate** — `quality/gates/entry-reachability.sh`
+6. [ ] **Implement WIRING gate** — `phases/review/gates/entry-reachability.sh`
    - Check for orphaned modules (not imported anywhere)
    - Check for dead imports (importing non-existent modules)
    - Return exit code 0 (pass) or 1 (fail) with details
 
-7. [ ] **Implement VISUAL gate** — `quality/gates/ui-visual-check.sh`
+7. [ ] **Implement VISUAL gate** — `phases/review/gates/ui-visual-check.sh`
    - Check for hardcoded colors (should use design tokens)
    - Check for missing alt text on images
    - Check for responsive breakpoints
    - Integrate with existing visual check tool if available
 
-8. [ ] **Implement wave-smoke gate** — `quality/gates/wave-smoke.sh`
+8. [ ] **Implement wave-smoke gate** — `phases/review/gates/wave-smoke.sh`
    - Verify all tests in current wave pass
    - Check for uncommitted changes
    - Verify no merge conflicts
 
-9. [ ] **Implement ACTIVATION gate** — `quality/gates/activation-gate.sh`
+9. [ ] **Implement ACTIVATION gate** — `phases/review/gates/activation-gate.sh`
    - Verify feature is reachable from entry point
    - Check for proper exports/imports
    - Verify no dead code paths
 
-10. [ ] **Implement REVIEW gate** — `quality/gates/review-precheck.sh`
+10. [ ] **Implement REVIEW gate** — `phases/review/gates/review-precheck.sh`
     - Check for TODO/FIXME comments
     - Verify test coverage meets threshold
     - Check for console.log/debug statements
@@ -93,7 +93,7 @@ Implement the three critical gaps identified in AIDLC research in sequential ord
 
 ## Test Strategy
 
-- **Unit:** Each gate script has a test file in `quality/gates/__tests__/`
+- **Unit:** Each gate script has a test file in `phases/review/gates/__tests__/`
 - **Integration:** Test gate sequence (WIRING → VISUAL → wave-smoke → ACTIVATION → REVIEW)
 - **Manual:** Verify context size <8KB after consolidation
 - **Manual:** Verify worktree creation and merge

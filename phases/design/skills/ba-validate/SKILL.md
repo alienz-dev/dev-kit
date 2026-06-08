@@ -125,6 +125,23 @@ Flag criteria that are:
 - Does the Scope Boundary exclude things that are ambiguously in-scope?
 - Does each behavior subsection have at least one acceptance criterion?
 
+### 3da. EARS Pattern Coverage
+For each behavior described in §2, verify it has BOTH:
+- At least one happy-path criterion (WHEN or Ubiquitous)
+- At least one error-path criterion (IF/THEN)
+
+Check the overall spec for pattern diversity. A spec that only uses one EARS pattern is likely incomplete. Report:
+
+| Pattern | Count | Assessment |
+|---------|-------|------------|
+| Ubiquitous | N | (expected: at least 1 for core behavior) |
+| WHEN | N | (expected: at least 1 per feature for happy path) |
+| WHILE | N | (optional, expected if feature has state-dependent behavior) |
+| IF/THEN | N | (expected: at least 1 per feature for error handling) |
+| WHERE | N | (optional, expected if feature depends on config/flags) |
+
+Flag as MAJOR if a feature has happy-path criteria but zero IF/THEN error criteria — this means error handling was not specified.
+
 ### 3e. Internal Consistency
 - Do linked_issues match the feature described?
 - Do test-files reference files that exist (or are plausible)?

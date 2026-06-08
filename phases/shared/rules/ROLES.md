@@ -415,10 +415,12 @@ Every role has a **contract** defining its boundaries:
 
 **Phases:** audit → explore → critique → decide → specify → verify
 
-**Tools:**
+**Tools:** (not yet implemented)
+<!-- TODO: implement design-sandbox.sh, design-grade.sh, design-iterate.sh
 - `design-sandbox.sh` — Playwright screenshot capture
 - `design-grade.sh` — LLM-based scoring
 - `design-iterate.sh` — Autonomous generate→screenshot→grade loop
+-->
 
 **Scoring:** total = DQ×0.4 + O×0.4 + C×0.15 + F×0.05
 - Accept: total ≥ 8.0 AND originality ≥ 9
@@ -695,6 +697,6 @@ Agent({ prompt: "task", run_in_background: true })
 
 Each role loads a minimal set of context files at startup. See `../rules/RESOURCE-SETS.md` for the full allocation table.
 
-**Key rule:** Every agent gets the governance layer (client_rules + amazonq + user-profile + hot-memory). Role-specific resources are added on top — only what that role actually uses.
+**Key rule:** Every agent gets the governance layer (client_rules + user-profile + hot-memory). Role-specific resources are added on top — only what that role actually uses.
 
 **Context budget target:** No agent should consume more than 15% of its context window on preloaded resources. For Claude Opus (200K tokens), that's ~30K tokens (~100KB text).

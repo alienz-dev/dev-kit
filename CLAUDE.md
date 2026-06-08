@@ -13,10 +13,10 @@ No compiled code, no package.json at root, no test suite to run.
 - `scaffold.sh` — generates new projects with agent infrastructure
 - `setup.sh` — bootstraps a fresh machine (Node, git, Claude Code, submodules)
 - `templates/` — project templates copied by scaffold
-- `agents/` — agent role definitions and rules
+- `phases/*/agents/` — agent role definitions (copied to `.claude/agents/` by scaffold)
 - `workflow/` — SDD, TRIO, pipeline methodology
   - `dynamic-workflows-guide.md` — when and how to use dynamic workflows
-- `.claude/workflows/` — reusable workflow scripts (adversarial-review, wave-dispatch, sdd-test-gen, sdd-review, sdd-retro, sdd-implement, deep-audit, migration-sweep, research-crosscheck)
+- `.claude/workflows/` — reusable workflow scripts (adversarial-review, wave-dispatch, sdd-test-gen, sdd-review, sdd-retro, sdd-implement, wave-implement, review-sdd, deep-audit, migration-sweep, research-crosscheck)
 - `tools/` — specialized tooling (explainer, issue-cli)
 
 ## Skills Architecture
@@ -44,7 +44,7 @@ Installed at `~/.claude/skills/`. Useful in any project, regardless of SDD.
 | `/audit` | Meta | Deep security-focused audit (security + deps + debt) |
 | `/pre-commit` | Meta | Pre-commit checks — lint, types, tests, security |
 | `/status` | Meta | Quick inline status — build, types, lint, tests, git |
-| `/scaffold` | Meta | Scaffold new project or retrofit AI infrastructure |
+| `/scaffold` | Meta | Scaffold new project or retrofit AI infrastructure (shell script, not a SKILL.md) |
 
 ### SDD Skills (bundled in scaffolded projects only)
 

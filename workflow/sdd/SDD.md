@@ -56,6 +56,37 @@ WHILE authenticated WHEN user navigates to /admin THE system SHALL display admin
 IF session expires WHILE user is editing THEN THE system SHALL save draft locally
 ```
 
+### Pattern Coverage (Completeness Checklist)
+
+For each feature, verify you have BOTH:
+- At least one happy-path criterion (WHEN or Ubiquitous)
+- At least one error-path criterion (IF/THEN)
+
+Use this checklist when writing or reviewing acceptance criteria:
+- [ ] What events trigger the feature? → WHEN
+- [ ] What states constrain behavior? → WHILE
+- [ ] What errors can occur? → IF/THEN
+- [ ] What optional features affect it? → WHERE
+- [ ] What always applies? → THE (ubiquitous)
+
+A pattern category with zero entries should have a note explaining why (not applicable vs. missed).
+
+### Non-Functional Requirements (SHALL/MUST)
+
+Functional requirements use EARS patterns above. Non-functional requirements use RFC 2119 language with measurable thresholds:
+
+| Category | Template | Example |
+|----------|----------|---------|
+| Performance | `The system SHALL [action] within [N] [unit]` | The system SHALL respond within 200ms (p95) |
+| Security | `The system MUST [action]` / `The system SHALL NOT [action]` | The system MUST sanitize all user input |
+| Compatibility | `The system SHALL support [target]` | The system SHALL support Node.js 20+ |
+| Capacity | `The system SHALL handle [N] [unit]` | The system SHALL handle 1000 concurrent connections |
+
+Rules:
+- SHALL = absolute requirement. SHOULD = recommended. MAY = optional.
+- Every NFR must have a measurable threshold — no "fast", "efficient", "scalable"
+- NFRs go in §5 Constraints, not in §2 Acceptance Criteria
+
 ## Change Specification (Brownfield Changes)
 
 For changes to existing behavior, include these sections:

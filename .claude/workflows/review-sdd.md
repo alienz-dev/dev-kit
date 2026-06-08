@@ -11,11 +11,11 @@ phase('Review')
 
 const reviews = await parallel([
   () => agent(
-    `Review the SDD methodology files in /Users/ding/projects/dev-kit/workflow/sdd/ — focus on the spec lifecycle (draft → approved → implementing → verified → shipped). Identify any gaps or ambiguities in the state transitions. Read the main SDD.md and SPEC-CHANGE.md files.`,
+    `Review the SDD methodology files in workflow/sdd/ — focus on the spec lifecycle (draft → approved → implementing → verified → shipped). Identify any gaps or ambiguities in the state transitions. Read the main SDD.md and SPEC-CHANGE.md files.`,
     { label: 'review:spec-lifecycle', phase: 'Review', schema: { type: 'object', properties: { findings: { type: 'array', items: { type: 'object', properties: { title: { type: 'string' }, severity: { type: 'string', enum: ['critical', 'major', 'minor'] }, description: { type: 'string' } } } } }, required: ['findings'] } }
   ),
   () => agent(
-    `Review the TRIO protocol in /Users/ding/projects/dev-kit/workflow/trio/ — focus on the information barrier (coders never see spec, only tests). Evaluate the gate system (RED → GREEN → wiring → visual → wave-smoke → hidden → alignment → activation → review). Identify any enforcement gaps. Read the main TRIO.md file.`,
+    `Review the TRIO protocol in workflow/trio/ — focus on the information barrier (coders never see spec, only tests). Evaluate the gate system (RED → GREEN → wiring → visual → wave-smoke → hidden → alignment → activation → review). Identify any enforcement gaps. Read the main TRIO.md file.`,
     { label: 'review:trio-gates', phase: 'Review', schema: { type: 'object', properties: { findings: { type: 'array', items: { type: 'object', properties: { title: { type: 'string' }, severity: { type: 'string', enum: ['critical', 'major', 'minor'] }, description: { type: 'string' } } } } }, required: ['findings'] } }
   ),
   () => agent(

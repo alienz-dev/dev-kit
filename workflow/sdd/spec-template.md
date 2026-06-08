@@ -20,9 +20,27 @@ test-files:
 <Detailed behavior specification>
 
 ### Acceptance Criteria (EARS)
-- WHEN [trigger] THE system SHALL [response]
-- WHILE [state] THE system SHALL [behavior]
-- IF [error] THEN THE system SHALL [recovery]
+
+Every criterion MUST match exactly one pattern. Each statement = one test case.
+
+| Pattern | Template | When to use |
+|---------|----------|-------------|
+| Ubiquitous | `THE system SHALL [behavior]` | Always-active behavior, no trigger needed |
+| Event-driven | `WHEN [trigger] THE system SHALL [response]` | Responding to a discrete, detectable event |
+| State-driven | `WHILE [state] THE system SHALL [behavior]` | Behavior while in a specific mode/state |
+| Unwanted | `IF [condition] THEN THE system SHALL [recovery]` | Error handling, fault scenarios, edge cases |
+| Optional | `WHERE [feature] THE system SHALL [behavior]` | Behavior tied to a config/feature flag |
+
+Compound patterns are allowed: `WHILE [state] WHEN [trigger] THE system SHALL [response]`
+
+**Examples:**
+- THE system SHALL expose a health endpoint at /healthz
+- WHEN user clicks "Next" THE system SHALL load page N+1
+- WHILE loading THE system SHALL show skeleton UI
+- IF API returns 500 THEN THE system SHALL show retry button
+- WHERE dark mode is enabled THE system SHALL use dark color tokens
+
+**Coverage rule:** For each behavior, include at least one happy-path (WHEN or Ubiquitous) AND at least one error-path (IF/THEN). Use the pattern checklist: "What events trigger it? What states constrain it? What errors can occur? What optional features affect it?"
 
 ## §3 Change Specification (if brownfield)
 ### Current Behavior
@@ -44,7 +62,27 @@ test-files:
 | empty | default behavior | Graceful degradation |
 
 ## §5 Constraints
-<Performance, security, compatibility requirements>
+
+### Non-Functional Requirements (SHALL/MUST)
+
+Use RFC 2119 language for non-functional requirements. Each NFR MUST be measurable.
+
+| Category | Template | Example |
+|----------|----------|---------|
+| Performance | `The system SHALL [action] within [N] [unit]` | The system SHALL respond to API requests within 200ms (p95) |
+| Security | `The system SHALL NOT [action]` / `The system MUST [action]` | The system MUST sanitize all user input before rendering |
+| Compatibility | `The system SHALL support [target]` | The system SHALL support Node.js 20+ |
+| Availability | `The system SHALL maintain [metric] of [value]` | The system SHALL maintain 99.9% uptime per calendar month |
+| Capacity | `The system SHALL handle [N] [unit] simultaneously` | The system SHALL handle 1000 concurrent WebSocket connections |
+
+**Rules:**
+- SHALL = absolute requirement. SHOULD = recommended. MAY = optional.
+- Every NFR must have a measurable threshold (no "fast", "efficient", "scalable")
+- Security constraints: specify what the system MUST NOT do (attack surface reduction)
+- If no NFRs apply, write "None — default project constraints apply"
+
+### Additional Constraints
+<Compatibility requirements, platform constraints, regulatory requirements>
 
 ## §6 Clarifications (from grill session)
 <Questions raised during grill and their answers>
